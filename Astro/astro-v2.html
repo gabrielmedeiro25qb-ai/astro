@@ -1,0 +1,2174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Astro — venda por conversa, sem perder o controle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#6C5CE7; --brand-ink:#5A4AD1; --brand-soft:#F1EFFE;
+  --accent:#00C2A8; --accent-soft:#E4F8F5;
+  --bg:#F8F9FC; --card:#FFFFFF; --card-2:#F3F4F8;
+  --ink:#171725; --ink-2:#6B6B7A; --ink-3:#9A9AA8;
+  --line:#E5E7EB; --line-2:#D6D9E0;
+  --ok:#0E9F6E; --ok-bg:#E6F6EF;
+  --warn:#B54708; --warn-bg:#FEF3E2;
+  --err:#D42D20; --err-bg:#FDECEA;
+  --info:#2563EB; --info-bg:#E8EFFE;
+  --sh-1:0 1px 2px rgba(23,23,37,.04),0 1px 3px rgba(23,23,37,.06);
+  --sh-2:0 4px 12px rgba(23,23,37,.06),0 12px 32px rgba(23,23,37,.06);
+  --sh-3:0 24px 64px rgba(23,23,37,.16);
+  --r:12px; --r-lg:18px; --r-xl:26px;
+  --e-out:cubic-bezier(.22,1,.36,1);
+  --e-soft:cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"]{
+  --brand:#8B7CFF; --brand-ink:#A395FF; --brand-soft:#211E38;
+  --accent:#2ED9BE; --accent-soft:#122E2A;
+  --bg:#0E0E14; --card:#16161F; --card-2:#1E1E29;
+  --ink:#F2F2F6; --ink-2:#9C9CAE; --ink-3:#6E6E80;
+  --line:#26262F; --line-2:#33333F;
+  --ok:#34D399; --ok-bg:#10291F; --warn:#F5B544; --warn-bg:#2C2212;
+  --err:#F87171; --err-bg:#2C1616; --info:#7DA6FF; --info-bg:#141F38;
+  --sh-1:0 1px 2px rgba(0,0,0,.4); --sh-2:0 8px 28px rgba(0,0,0,.45); --sh-3:0 24px 64px rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:Poppins,system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
+img{max-width:100%}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:2px solid var(--bg)}
+
+/* ---------- primitivos ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 18px;border-radius:10px;font-weight:500;font-size:14px;transition:background .18s var(--e-soft),border-color .18s,transform .12s var(--e-out),box-shadow .18s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn-primary{background:var(--brand);color:#fff;box-shadow:0 1px 2px rgba(108,92,231,.3)}
+.btn-primary:hover{background:var(--brand-ink);box-shadow:0 6px 18px rgba(108,92,231,.28)}
+.btn-ghost{border:1px solid var(--line-2);color:var(--ink);background:var(--card)}
+.btn-ghost:hover{border-color:var(--ink-3);background:var(--card)}
+.btn-quiet{background:var(--card-2);color:var(--ink)}
+.btn-quiet:hover{background:var(--line)}
+.btn-danger{background:var(--err-bg);color:var(--err)}
+.btn-sm{height:34px;padding:0 13px;font-size:13px;border-radius:9px}
+.btn-lg{height:50px;padding:0 24px;font-size:15px;border-radius:12px}
+.btn-icon{width:40px;height:40px;padding:0;border-radius:11px}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn .spin{width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-1)}
+.pad{padding:18px}.pad-lg{padding:24px}
+.field{display:block;margin-bottom:15px}
+.field>span{display:block;font-size:13px;font-weight:500;color:var(--ink-2);margin-bottom:6px}
+.input,.select,.textarea{width:100%;background:var(--card);border:1px solid var(--line-2);border-radius:10px;padding:11px 13px;font-size:14px;transition:border-color .16s,box-shadow .16s}
+.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.input[aria-invalid="true"]{border-color:var(--err);box-shadow:0 0 0 3px var(--err-bg)}
+.textarea{min-height:96px;resize:vertical}
+.hint{font-size:12px;color:var(--ink-3);margin-top:6px}
+.err-msg{font-size:12.5px;color:var(--err);margin-top:5px;display:block}
+
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:500;background:var(--card-2);color:var(--ink-2)}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.err{background:var(--err-bg);color:var(--err)}
+.chip.info{background:var(--info-bg);color:var(--info)}
+.chip.brand{background:var(--brand-soft);color:var(--brand)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.muted{color:var(--ink-2)}.tiny{font-size:12px;color:var(--ink-3)}
+.strong{font-weight:600}.num{font-variant-numeric:tabular-nums}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.stack{display:flex;flex-direction:column;gap:3px}
+.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:16px}
+.sep{height:1px;background:var(--line);margin:16px 0}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-size:12.5px;font-weight:600;flex:none}
+.thumb{width:44px;height:44px;border-radius:11px;background:var(--card-2);display:grid;place-items:center;font-size:18px;flex:none;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover}
+
+.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:22px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:11px 14px;font-size:14px;font-weight:500;color:var(--ink-2);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .16s}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--brand);border-bottom-color:var(--brand)}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--card)}
+table{width:100%;border-collapse:collapse;min-width:620px}
+th{text-align:left;font-size:12px;font-weight:600;color:var(--ink-3);padding:12px 16px;border-bottom:1px solid var(--line);background:var(--card-2)}
+td{padding:14px 16px;border-bottom:1px solid var(--line);font-size:14px}
+tbody tr:last-child td{border-bottom:0}
+tbody tr{cursor:pointer;transition:background .14s}
+tbody tr:hover{background:var(--card-2)}
+
+.empty{text-align:center;padding:56px 22px;border:1px dashed var(--line-2);border-radius:var(--r-lg);background:var(--card)}
+.empty .ic{width:52px;height:52px;border-radius:15px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;margin:0 auto 14px}
+.skel{background:linear-gradient(90deg,var(--card-2) 25%,var(--line) 50%,var(--card-2) 75%);background-size:200% 100%;animation:sh 1.3s infinite;border-radius:9px}
+@keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+.switch{width:42px;height:24px;border-radius:999px;background:var(--line-2);position:relative;transition:background .2s var(--e-soft);flex:none}
+.switch::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .24s var(--e-out);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch[aria-checked="true"]{background:var(--brand)}
+.switch[aria-checked="true"]::after{transform:translateX(18px)}
+
+/* ---------- landing ---------- */
+.shell{max-width:1140px;margin:0 auto;padding:0 20px}
+.lp-header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .25s,background .25s}
+.lp-header.stuck{border-bottom-color:var(--line)}
+.lp-nav{display:flex;align-items:center;gap:26px;height:68px}
+.lp-nav a.lk{font-size:14px;color:var(--ink-2);display:none;transition:color .16s}
+.lp-nav a.lk:hover{color:var(--ink)}
+@media(min-width:900px){.lp-nav a.lk{display:inline}}
+.logo{display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:17.5px;letter-spacing:-.02em}
+.logo-mark{width:30px;height:30px;border-radius:9px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px;flex:none}
+.burger{display:grid;place-items:center;width:40px;height:40px;border-radius:10px}
+@media(min-width:900px){.burger{display:none}}
+
+section.lp{padding:76px 0}
+@media(min-width:900px){section.lp{padding:104px 0}}
+.eyebrow{font-size:13px;font-weight:500;color:var(--brand);margin-bottom:12px}
+h1.hero{font-size:clamp(34px,6.4vw,58px);line-height:1.06;font-weight:600;letter-spacing:-.035em;max-width:15ch}
+h2.sec{font-size:clamp(26px,4vw,38px);line-height:1.14;font-weight:600;letter-spacing:-.028em;max-width:20ch}
+p.lead{font-size:clamp(15.5px,2vw,18px);color:var(--ink-2);max-width:56ch;margin-top:16px;line-height:1.6}
+.hero-wrap{padding-top:44px}
+.hero-cta{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap}
+.hero-note{font-size:13px;color:var(--ink-3);margin-top:16px}
+
+.mock{border:1px solid var(--line);border-radius:var(--r-xl);background:var(--card);box-shadow:var(--sh-3);overflow:hidden;position:relative}
+.mock-bar{display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--card-2)}
+.mock-bar i{width:9px;height:9px;border-radius:50%;background:var(--line-2);display:block}
+.mock-tag{position:absolute;top:12px;right:14px;z-index:2}
+.mock-body{display:grid;grid-template-columns:1fr;gap:14px;padding:18px}
+@media(min-width:760px){.mock-body{grid-template-columns:172px 1fr}}
+.mock-side{display:none;flex-direction:column;gap:3px}
+@media(min-width:760px){.mock-side{display:flex}}
+.mock-nav{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;font-size:13px;color:var(--ink-2)}
+.mock-nav.on{background:var(--brand);color:#fff}
+.mini{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:520px){.mini{grid-template-columns:repeat(4,1fr)}}
+.mini div{border:1px solid var(--line);border-radius:12px;padding:12px}
+.mini .l{font-size:11.5px;color:var(--ink-2)}
+.mini .v{font-size:19px;font-weight:600;letter-spacing:-.02em;margin-top:3px}
+
+.prob{display:grid;grid-template-columns:1fr;gap:0;border-top:1px solid var(--line)}
+.prob-row{display:grid;grid-template-columns:1fr;gap:6px;padding:22px 0;border-bottom:1px solid var(--line)}
+@media(min-width:760px){.prob-row{grid-template-columns:1fr 1.3fr;gap:32px;align-items:baseline}}
+.prob-row h4{font-size:16.5px;font-weight:600;letter-spacing:-.01em}
+.prob-row p{font-size:14.5px;color:var(--ink-2)}
+
+.feat{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+@media(min-width:640px){.feat{grid-template-columns:1fr 1fr}}
+@media(min-width:1000px){.feat{grid-template-columns:repeat(4,1fr)}}
+.feat>div{background:var(--card);padding:24px}
+.feat h4{font-size:15.5px;font-weight:600;margin:14px 0 6px}
+.feat p{font-size:13.5px;color:var(--ink-2)}
+.feat .ic{width:38px;height:38px;border-radius:11px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center}
+
+.flow{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:820px){.flow{grid-template-columns:repeat(6,1fr);gap:8px}}
+.flow-node{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:16px 14px;position:relative}
+.flow-node .n{font-size:11.5px;color:var(--brand);font-weight:600}
+.flow-node .t{font-size:14.5px;font-weight:600;margin-top:5px}
+.flow-node .d{font-size:12.5px;color:var(--ink-2);margin-top:4px}
+
+.plans{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:820px){.plans{grid-template-columns:repeat(3,1fr)}}
+.plan{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--card);padding:26px;display:flex;flex-direction:column}
+.plan.hi{border-color:var(--brand);box-shadow:0 12px 40px rgba(108,92,231,.14)}
+.plan ul{list-style:none;margin:18px 0;display:flex;flex-direction:column;gap:9px;flex:1}
+.plan li{font-size:13.5px;color:var(--ink-2);display:flex;gap:9px;align-items:flex-start}
+.plan li svg{color:var(--accent);flex:none;margin-top:2px}
+.faq-item{border-bottom:1px solid var(--line)}
+.faq-q{width:100%;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:19px 0;text-align:left;font-size:15.5px;font-weight:500}
+.faq-a{overflow:hidden;height:0}
+.faq-a p{font-size:14.5px;color:var(--ink-2);padding-bottom:19px;max-width:70ch}
+.lp-footer{border-top:1px solid var(--line);padding:44px 0 34px;font-size:13.5px;color:var(--ink-2)}
+.fcols{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+@media(min-width:820px){.fcols{grid-template-columns:2fr 1fr 1fr 1fr}}
+.fcols h5{font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:10px}
+.fcols a{display:block;padding:4px 0;color:var(--ink-2);transition:color .16s}
+.fcols a:hover{color:var(--brand)}
+
+/* ---------- auth ---------- */
+.auth{min-height:100dvh;display:grid;grid-template-columns:1fr;place-items:center;padding:26px}
+@media(min-width:960px){.auth{grid-template-columns:1fr 1fr;place-items:stretch;padding:20px}}
+.auth-art{display:none;border-radius:var(--r-xl);background:var(--ink);color:var(--bg);padding:44px;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+@media(min-width:960px){.auth-art{display:flex}}
+.auth-art h3{font-size:34px;line-height:1.12;font-weight:600;letter-spacing:-.03em;max-width:14ch}
+.auth-box{width:100%;max-width:410px;margin:auto;padding:20px}
+
+/* ---------- app ---------- */
+.sidebar{position:fixed;inset:0 auto 0 0;width:250px;background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:60;transform:translateX(-100%);visibility:hidden}
+@media(min-width:1024px){.sidebar{transform:none!important;visibility:visible!important}}
+.scrim-nav{position:fixed;inset:0;background:rgba(23,23,37,.42);z-index:55;opacity:0}
+@media(min-width:1024px){.scrim-nav{display:none!important}}
+.nav{flex:1;overflow-y:auto;padding:8px}
+.nav-item{display:flex;align-items:center;gap:11px;width:100%;padding:9px 11px;border-radius:10px;color:var(--ink-2);font-size:14px;font-weight:500;transition:background .16s,color .16s}
+.nav-item:hover{background:var(--card-2);color:var(--ink)}
+.nav-item.on{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.nav-group{font-size:11px;font-weight:600;color:var(--ink-3);padding:16px 12px 6px}
+.main{min-height:100dvh;padding-bottom:78px}
+@media(min-width:1024px){.main{margin-left:250px;padding-bottom:0}}
+.topbar{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:11px 16px;display:flex;align-items:center;gap:11px}
+@media(min-width:1024px){.topbar{padding:13px 28px}}
+.page{padding:22px 16px 44px;max-width:1160px}
+@media(min-width:1024px){.page{padding:28px 28px 60px}}
+.phead{margin-bottom:22px}
+.phead h1{font-size:24px;font-weight:600;letter-spacing:-.025em}
+@media(min-width:1024px){.phead h1{font-size:28px}}
+.phead p{color:var(--ink-2);font-size:14px;margin-top:3px;max-width:62ch}
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:45;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+@media(min-width:1024px){.bnav{display:none}}
+.bn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;font-size:10.5px;font-weight:500;color:var(--ink-3);border-radius:10px}
+.bn.on{color:var(--brand)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:900px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:17px}
+.kpi .l{font-size:12.5px;color:var(--ink-2);font-weight:500}
+.kpi .v{font-size:25px;font-weight:600;letter-spacing:-.03em;margin-top:5px;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:12px;margin-top:3px;color:var(--ink-3)}
+.demo-bar{background:var(--warn-bg);color:var(--warn);border-bottom:1px solid color-mix(in srgb,var(--warn) 25%,transparent);padding:9px 16px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+
+/* ---------- overlays ---------- */
+.scrim{position:fixed;inset:0;background:rgba(23,23,37,.5);backdrop-filter:blur(3px);z-index:70;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:700px){.scrim{align-items:center;padding:24px}}
+.modal{background:var(--card);width:100%;max-width:600px;max-height:88dvh;overflow-y:auto;border-radius:22px 22px 0 0;box-shadow:var(--sh-3)}
+@media(min-width:700px){.modal{border-radius:var(--r-xl)}}
+.mhead{position:sticky;top:0;background:var(--card);padding:19px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;z-index:2}
+.mhead h4{font-size:17.5px;font-weight:600;letter-spacing:-.015em}
+.mbody{padding:22px}
+.mfoot{position:sticky;bottom:0;background:var(--card);padding:15px 22px calc(15px + env(safe-area-inset-bottom));border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+#toasts{position:fixed;z-index:90;bottom:90px;left:16px;right:16px;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+@media(min-width:1024px){#toasts{bottom:24px;left:auto;right:24px;width:350px}}
+.toast{background:var(--ink);color:var(--bg);padding:13px 16px;border-radius:12px;font-size:13.5px;box-shadow:var(--sh-3);display:flex;gap:10px;align-items:flex-start}
+.toast .bar{width:3px;border-radius:3px;background:var(--accent);align-self:stretch;flex:none}
+.toast.err .bar{background:var(--err)}.toast.warn .bar{background:var(--warn)}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div id="toasts"></div>
+<div id="overlay"></div>
+<div id="root"></div>
+<script>
+/* ================================================================
+   ASTRO — camada de aplicação
+   Persistência: window.storage (chave/valor, por usuário).
+   Todo dado exibido vem daqui ou é calculado. Nada é hardcoded.
+   ================================================================ */
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const el = h => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+const uid = p => p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const BRL = n => (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const NUM = n => (n||0).toLocaleString('pt-BR');
+const initials = n => (n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dfmt = iso => new Date(iso).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+const dtfmt = iso => new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+
+/* ---------------- MOTION ----------------
+   Sistema único de movimento (Web Animations API).
+   No projeto React estes tokens viram props do motion/react:
+   ENTER -> initial/animate, STAGGER -> transition.staggerChildren. */
+const RM = matchMedia('(prefers-reduced-motion: reduce)');
+const M = {
+  dur:{ xs:.14, sm:.22, md:.34, lg:.5 },
+  ease:{ out:[.22,1,.36,1], soft:[.4,0,.2,1], spring:[.34,1.4,.44,1] },
+  cb: e => `cubic-bezier(${e.join(',')})`
+};
+function anim(node, keyframes, {d=M.dur.md, e=M.ease.out, delay=0, fill='both'}={}){
+  if(!node) return null;
+  if(RM.matches){ node.style.opacity=''; node.style.transform=''; return null; }
+  return node.animate(keyframes, {duration:d*1000, delay:delay*1000, easing:M.cb(e), fill});
+}
+const enter = (n,o={}) => anim(n,[{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{d:M.dur.md,...o});
+const pop   = (n,o={}) => anim(n,[{opacity:0,transform:'scale(.96)'},{opacity:1,transform:'none'}],{d:M.dur.sm,e:M.ease.spring,...o});
+function stagger(nodes, step=.045, o={}){
+  [...nodes].forEach((n,i)=>enter(n,{delay:i*step, ...o}));
+}
+/* revela ao entrar na viewport — usado só na landing */
+const io = new IntersectionObserver(es=>es.forEach(x=>{
+  if(x.isIntersecting){ enter(x.target,{delay:(+x.target.dataset.rd||0)}); io.unobserve(x.target); }
+}),{threshold:.14, rootMargin:'0px 0px -8% 0px'});
+function reveal(scope){
+  scope.querySelectorAll('[data-reveal]').forEach(n=>{
+    if(!RM.matches) n.style.opacity='0';
+    io.observe(n);
+  });
+}
+
+/* ---------------- STORAGE ----------------
+   Contrato assíncrono, igual ao de um backend real.
+   Trocar este objeto por chamadas HTTP é a única mudança
+   necessária para plugar um Postgres/Supabase por trás. */
+const MEM = new Map();
+const hasStore = typeof window !== 'undefined' && window.storage && typeof window.storage.get === 'function';
+const kv = {
+  async get(k, fallback=null){
+    if(hasStore){
+      try{ const r = await window.storage.get(k); if(r) return JSON.parse(r.value); }catch(e){}
+    }
+    return MEM.has(k) ? JSON.parse(MEM.get(k)) : fallback;
+  },
+  async set(k, v){
+    const raw = JSON.stringify(v);
+    MEM.set(k, raw);
+    if(hasStore){ try{ await window.storage.set(k, raw); }catch(e){} }
+    return v;
+  },
+  async del(k){
+    MEM.delete(k);
+    if(hasStore){ try{ await window.storage.delete(k); }catch(e){} }
+  }
+};
+
+/* Escopo multi-tenant: TODA chave de dado carrega o id da empresa.
+   Nenhuma leitura acontece sem companyId — é o mesmo princípio de
+   uma cláusula WHERE company_id = ? obrigatória no backend. */
+const K = {
+  users:'astro:users',
+  session:'astro:session',
+  company: c => `astro:co:${c}:company`,
+  products: c => `astro:co:${c}:products`,
+  customers: c => `astro:co:${c}:customers`,
+  orders: c => `astro:co:${c}:orders`,
+  team: c => `astro:co:${c}:team`,
+  automations: c => `astro:co:${c}:automations`,
+  ai: c => `astro:co:${c}:ai`,
+  integrations: c => `astro:co:${c}:integrations`,
+  notifications: c => `astro:co:${c}:notifications`,
+  conversations: c => `astro:co:${c}:conversations`,
+  audit: c => `astro:co:${c}:audit`
+};
+
+async function sha256(txt){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ---------------- ESTADO ---------------- */
+const S = { user:null, company:null, membership:null, demo:false, route:'landing' };
+
+const api = {
+  /* --- auth --- */
+  async register({nome,email,senha,empresa}){
+    const users = await kv.get(K.users, []);
+    if(users.some(u=>u.email.toLowerCase()===email.toLowerCase()))
+      throw new Error('Já existe uma conta com este e-mail.');
+    const companyId = uid('co');
+    const salt = uid('s');
+    const user = { id:uid('u'), nome, email, salt, hash:await sha256(salt+senha),
+                   companyId, role:'Proprietário', criadoEm:new Date().toISOString() };
+    users.push(user);
+    await kv.set(K.users, users);
+    await kv.set(K.company(companyId), { id:companyId, nome:empresa, doc:'', telefone:'',
+      endereco:'', onboarded:false, demo:false, criadoEm:new Date().toISOString() });
+    for(const key of ['products','customers','orders','automations','notifications','conversations','audit'])
+      await kv.set(K[key](companyId), []);
+    await kv.set(K.team(companyId), [{ id:user.id, nome, email, papel:'Proprietário', ativo:true, convidadoEm:user.criadoEm }]);
+    await kv.set(K.ai(companyId), { nome:'', tom:'Próximo e objetivo', abertura:'', regras:'',
+      transferir:'', horario:'24h', ativa:false });
+    await kv.set(K.integrations(companyId), { whatsapp:{status:'desconectado'}, pagamentos:{status:'desconectado'}, webhook:{status:'desconectado'} });
+    return user;
+  },
+  async login({email,senha}){
+    const users = await kv.get(K.users, []);
+    const u = users.find(x=>x.email.toLowerCase()===email.toLowerCase());
+    if(!u) throw new Error('E-mail não encontrado.');
+    if(await sha256(u.salt+senha) !== u.hash) throw new Error('Senha incorreta.');
+    await kv.set(K.session, { userId:u.id, companyId:u.companyId, em:Date.now() });
+    return u;
+  },
+  async logout(){ await kv.del(K.session); S.user=null; S.company=null; },
+  async resetPassword(email, nova){
+    const users = await kv.get(K.users, []);
+    const u = users.find(x=>x.email.toLowerCase()===email.toLowerCase());
+    if(!u) throw new Error('E-mail não encontrado.');
+    u.salt = uid('s'); u.hash = await sha256(u.salt+nova);
+    await kv.set(K.users, users);
+  },
+  async restore(){
+    const s = await kv.get(K.session);
+    if(!s) return null;
+    const users = await kv.get(K.users, []);
+    const u = users.find(x=>x.id===s.userId);
+    if(!u) { await kv.del(K.session); return null; }
+    S.user = u;
+    S.company = await kv.get(K.company(u.companyId));
+    S.demo = !!(S.company && S.company.demo);
+    return u;
+  },
+
+  /* --- CRUD genérico, sempre escopado à empresa da sessão --- */
+  cid(){ if(!S.user) throw new Error('Sessão expirada.'); return S.user.companyId; },
+  async list(res){ return await kv.get(K[res](this.cid()), []); },
+  async save(res, rows){ return await kv.set(K[res](this.cid()), rows); },
+  async create(res, obj){
+    const rows = await this.list(res);
+    const row = { id:uid(res.slice(0,3)), criadoEm:new Date().toISOString(), ...obj };
+    rows.unshift(row); await this.save(res, rows); await this.log(`criou ${res}`, row.nome||row.id);
+    return row;
+  },
+  async update(res, id, patch){
+    const rows = await this.list(res);
+    const i = rows.findIndex(r=>r.id===id);
+    if(i<0) throw new Error('Registro não encontrado.');
+    rows[i] = { ...rows[i], ...patch, atualizadoEm:new Date().toISOString() };
+    await this.save(res, rows); await this.log(`editou ${res}`, rows[i].nome||id);
+    return rows[i];
+  },
+  async remove(res, id){
+    const rows = await this.list(res);
+    await this.save(res, rows.filter(r=>r.id!==id));
+    await this.log(`excluiu ${res}`, id);
+  },
+  async getCfg(res, def){ return await kv.get(K[res](this.cid()), def); },
+  async setCfg(res, val){ return await kv.set(K[res](this.cid()), val); },
+  async log(acao, alvo){
+    const rows = await kv.get(K.audit(this.cid()), []);
+    rows.unshift({ id:uid('lg'), acao, alvo:String(alvo||''), por:S.user?.nome||'—', em:new Date().toISOString() });
+    await kv.set(K.audit(this.cid()), rows.slice(0,200));
+  },
+  async company(patch){
+    const c = { ...S.company, ...patch };
+    await kv.set(K.company(c.id), c); S.company = c; return c;
+  },
+
+  /* --- MÉTRICAS: sempre calculadas, nunca armazenadas --- */
+  async metrics(dias=30){
+    const [orders, customers, products] = await Promise.all([
+      this.list('orders'), this.list('customers'), this.list('products')
+    ]);
+    const desde = Date.now() - dias*864e5;
+    const noPeriodo = orders.filter(o => new Date(o.criadoEm).getTime() >= desde);
+    const pagos = noPeriodo.filter(o => o.status === 'Pago' || o.status === 'Concluído');
+    const fat = pagos.reduce((s,o)=>s+o.total, 0);
+    const perdidos = noPeriodo.filter(o=>o.status==='Cancelado').length;
+    const porProduto = {};
+    pagos.forEach(o=>o.itens.forEach(i=>{
+      porProduto[i.nome] = (porProduto[i.nome]||0) + i.qtd;
+    }));
+    return {
+      faturamento: fat,
+      pedidos: noPeriodo.length,
+      pagos: pagos.length,
+      cancelados: perdidos,
+      ticket: pagos.length ? fat/pagos.length : 0,
+      conversao: noPeriodo.length ? (pagos.length/noPeriodo.length)*100 : 0,
+      clientes: customers.length,
+      produtos: products.filter(p=>p.ativo).length,
+      totalProdutos: products.length,
+      topProdutos: Object.entries(porProduto).sort((a,b)=>b[1]-a[1]).slice(0,5),
+      serie: serieDiaria(pagos, Math.min(dias,14)),
+      vazio: orders.length===0 && customers.length===0 && products.length===0
+    };
+  }
+};
+
+function serieDiaria(pedidos, dias){
+  const out = [];
+  for(let i=dias-1;i>=0;i--){
+    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
+    const fim = d.getTime()+864e5;
+    out.push({ dia:d, valor: pedidos.filter(o=>{
+      const t = new Date(o.criadoEm).getTime(); return t>=d.getTime() && t<fim;
+    }).reduce((s,o)=>s+o.total,0) });
+  }
+  return out;
+}
+
+/* ---------------- UI: toast, modal ---------------- */
+function toast(msg, kind='ok'){
+  const t = el(`<div class="toast ${kind}"><span class="bar"></span><span>${esc(msg)}</span></div>`);
+  $('#toasts').appendChild(t);
+  anim(t,[{opacity:0,transform:'translateY(14px) scale(.97)'},{opacity:1,transform:'none'}],{d:M.dur.sm,e:M.ease.spring});
+  setTimeout(()=>{
+    const a = anim(t,[{opacity:1},{opacity:0,transform:'translateY(6px)'}],{d:M.dur.sm,e:M.ease.soft});
+    a ? a.finished.then(()=>t.remove()) : t.remove();
+  }, 3000);
+}
+
+let modals = [];
+function modal({title, sub='', body, foot='', wide=false}){
+  const scrim = el(`<div class="scrim" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <div class="modal" ${wide?'style="max-width:760px"':''}>
+      <div class="mhead"><div><h4>${esc(title)}</h4>${sub?`<p class="tiny" style="margin-top:3px">${esc(sub)}</p>`:''}</div>
+      <button class="btn btn-icon btn-quiet" data-close aria-label="Fechar">✕</button></div>
+      <div class="mbody">${body}</div>${foot?`<div class="mfoot">${foot}</div>`:''}
+    </div></div>`);
+  $('#overlay').appendChild(scrim); modals.push(scrim);
+  anim(scrim,[{opacity:0},{opacity:1}],{d:M.dur.sm,e:M.ease.soft});
+  const box = scrim.querySelector('.modal');
+  anim(box, innerWidth<700
+    ? [{transform:'translateY(28px)',opacity:.6},{transform:'none',opacity:1}]
+    : [{transform:'translateY(12px) scale(.985)',opacity:0},{transform:'none',opacity:1}],
+    {d:M.dur.md, e:M.ease.out});
+  scrim.addEventListener('click', ev=>{ if(ev.target===scrim||ev.target.closest('[data-close]')) closeModal(); });
+  scrim.querySelector('.mbody input, .mbody select, .mbody textarea')?.focus({preventScroll:true});
+  return scrim;
+}
+function closeModal(){
+  const m = modals.pop(); if(!m) return;
+  const a = anim(m,[{opacity:1},{opacity:0}],{d:M.dur.xs,e:M.ease.soft});
+  a ? a.finished.then(()=>m.remove()) : m.remove();
+}
+addEventListener('keydown', e=>{ if(e.key==='Escape' && modals.length) closeModal(); });
+
+function confirmar({title, texto, cta='Confirmar', perigo=true}){
+  return new Promise(res=>{
+    const m = modal({title, sub:texto, body:'<p class="tiny">Esta ação não pode ser desfeita.</p>',
+      foot:`<button class="btn btn-ghost" data-close>Cancelar</button>
+            <button class="btn ${perigo?'btn-primary':'btn-primary'}" ${perigo?'style="background:var(--err)"':''} data-yes>${esc(cta)}</button>`});
+    m.querySelector('[data-yes]').onclick = ()=>{ closeModal(); res(true); };
+    m.addEventListener('click', e=>{ if(e.target===m||e.target.closest('[data-close]')) res(false); });
+  });
+}
+
+/* botão com estado de carregamento real */
+async function withLoading(btn, fn){
+  const html = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = `<span class="spin"></span>${btn.dataset.loading||'Salvando'}`;
+  try { return await fn(); }
+  catch(err){ toast(err.message || 'Não foi possível concluir.', 'err'); throw err; }
+  finally { btn.disabled = false; btn.innerHTML = html; }
+}
+
+/* ================================================================
+   ÍCONES
+   ================================================================ */
+const ICO = {
+  home:'M3 10.6 12 3.4l9 7.2M5.6 9.4V20h12.8V9.4',
+  box:'M21 8 12 3.2 3 8v8l9 4.8 9-4.8zM3 8l9 4.8L21 8M12 12.8V20.8',
+  cart:'M2.5 3.5h2.8l2.4 11.4h10L20 6.9H6.4M9 20.2h.01M17.4 20.2h.01',
+  users:'M16 20.2v-1.9a4 4 0 0 0-4-4H7.4a4 4 0 0 0-4 4v1.9M9.7 10.6a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 20.2v-1.9a4 4 0 0 0-3-3.8',
+  ai:'M12 3.2v2.6M12 18.2v2.6M4.6 4.6l1.9 1.9M17.5 17.5l1.9 1.9M3.2 12h2.6M18.2 12h2.6M4.6 19.4l1.9-1.9M17.5 6.5l1.9-1.9M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+  chat:'M20.6 11.6a8 8 0 0 1-11.5 7.2L3.4 20.6l1.8-5.7A8 8 0 1 1 20.6 11.6z',
+  team:'M12 11.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8M5.2 20.4a6.8 6.8 0 0 1 13.6 0',
+  bolt:'M13.2 2.6 4.4 14.2h6.6L9.8 21.4l8.8-11.6H12z',
+  chart:'M4.4 20.4V10.2M10.2 20.4V4.4M16 20.4v-7.4M21.6 20.4H2.4',
+  plug:'M9.2 3.4v5.2M14.8 3.4v5.2M6.4 8.6h11.2v3.2a5.6 5.6 0 0 1-11.2 0zM12 17.4v3.2',
+  gear:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19.2 14.6a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.3a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 4.3 14H4a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 2.8 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.3a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.4 1z',
+  check:'M4.5 12.5 9.5 17.5 19.5 6.5',
+  plus:'M12 5v14M5 12h14',
+  more:'M5 12h.01M12 12h.01M19 12h.01',
+  search:'M17.5 17.5 21 21M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0',
+  bell:'M18 8.4A6 6 0 1 0 6 8.4c0 6.6-2.8 8.6-2.8 8.6h17.6S18 15 18 8.4M13.7 20.6a2 2 0 0 1-3.4 0',
+  arrow:'M5 12h13M13 6.5l5.5 5.5-5.5 5.5'
+};
+const ic = (n,s=18,w=1.7) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" style="width:${s}px;height:${s}px;flex:none"><path d="${ICO[n]}"/></svg>`;
+
+/* ================================================================
+   LANDING
+   ================================================================ */
+function viewLanding(){
+  const feats = [
+    ['ai','IA de atendimento','Responde no seu tom, com o seu catálogo e as suas regras. Quando não sabe, chama uma pessoa.'],
+    ['chat','WhatsApp','O canal onde seu cliente já está. Conversas, histórico e transferência para a equipe no mesmo lugar.'],
+    ['box','Produtos','Preço, estoque, SKU, variações e imagens. É daqui que a IA tira as respostas.'],
+    ['cart','Pedidos','Do primeiro "quanto custa" ao pagamento, com status, valores calculados e origem registrada.'],
+    ['users','CRM','Cada cliente com histórico de conversas, compras, etiquetas e observações da equipe.'],
+    ['bolt','Automações','Gatilho, condição e ação. O que você faria manualmente todo dia passa a acontecer sozinho.'],
+    ['team','Equipe','Papéis, permissões e distribuição de pedidos. Cada pessoa vê só o que precisa.'],
+    ['chart','Relatórios','Faturamento, conversão, ticket médio e desempenho por vendedor e pela IA.']
+  ];
+  const problemas = [
+    ['Atendimento manual','A mesma pergunta sobre preço, prazo e estoque, respondida à mão dezenas de vezes por dia.'],
+    ['Pedidos desorganizados','Combinados no meio da conversa, anotados num caderno ou numa planilha que ninguém atualiza.'],
+    ['Clientes espalhados','Um contato na agenda, outro na conversa arquivada, outro só na memória de quem atendeu.'],
+    ['Vendedores sem contexto','Quem assume a conversa não sabe o que já foi falado, e o cliente repete tudo de novo.'],
+    ['Nada automatizado','Cliente some, ninguém percebe. Estoque acaba, ninguém avisa. Venda fecha, nada é registrado.']
+  ];
+  const fluxo = [
+    ['Cliente','manda mensagem'],['WhatsApp','recebe e identifica'],['IA','responde e qualifica'],
+    ['Pedido','é criado com os valores'],['Vendedor','fecha quando precisa'],['Cliente','recebe e volta']
+  ];
+  const faq = [
+    ['Preciso saber programar?','Não. Você cadastra produtos, escreve as regras de atendimento em português e conecta o WhatsApp. O restante é configuração pela interface.'],
+    ['A IA pode inventar preço ou prazo?','Ela responde a partir do que está cadastrado: seus produtos, seu estoque, suas regras. Quando a informação não existe no sistema, a orientação é transferir para uma pessoa em vez de improvisar.'],
+    ['Como funciona a conexão com o WhatsApp?','O Astro fornece a estrutura de integração — credenciais, webhook de recebimento e envio de mensagens. Enquanto você não configurar um provedor, o painel mostra o WhatsApp como não conectado.'],
+    ['Meus dados ficam separados dos de outras empresas?','Sim. Cada empresa tem seu próprio espaço de dados, e o acesso é sempre filtrado pela empresa da sua sessão.'],
+    ['Consigo usar com minha equipe?','Sim. Você convida pessoas por e-mail e define o papel de cada uma: administrador, gerente ou vendedor.'],
+    ['Posso testar antes de cadastrar meus dados?','Pode. Depois de criar a conta há um modo de demonstração que popula o painel com dados de exemplo, sempre identificados como demonstração, e que podem ser apagados com um clique.']
+  ];
+
+  return `
+  <header class="lp-header" id="lph"><div class="shell"><nav class="lp-nav">
+    <a href="#topo" class="logo"><span class="logo-mark">A</span>Astro</a>
+    <div style="flex:1"></div>
+    <a class="lk" href="#problema">Produto</a>
+    <a class="lk" href="#recursos">Recursos</a>
+    <a class="lk" href="#como">Como funciona</a>
+    <a class="lk" href="#planos">Planos</a>
+    <a class="lk" href="#faq">FAQ</a>
+    <button class="btn btn-sm btn-quiet" data-nav="login">Entrar</button>
+    <button class="btn btn-sm btn-primary" data-nav="register">Começar agora</button>
+    <button class="burger btn-quiet" style="border-radius:10px" data-lpmenu>${ic('more',20)}</button>
+  </nav></div></header>
+
+  <main id="topo">
+    <section class="lp hero-wrap"><div class="shell">
+      <p class="eyebrow" data-reveal>Operação de vendas por conversa</p>
+      <h1 class="hero" data-reveal data-rd=".05">Sua empresa vende no WhatsApp. Seu sistema devia saber disso.</h1>
+      <p class="lead" data-reveal data-rd=".1">O Astro atende seus clientes com IA treinada no seu catálogo, transforma a conversa em pedido e entrega tudo organizado para a sua equipe — produtos, clientes, pedidos e resultados num painel só.</p>
+      <div class="hero-cta" data-reveal data-rd=".15">
+        <button class="btn btn-lg btn-primary" data-nav="register">Começar agora</button>
+        <button class="btn btn-lg btn-ghost" data-scroll="#como">Conhecer o Astro</button>
+      </div>
+      <p class="hero-note" data-reveal data-rd=".2">Conta gratuita para configurar. Você conecta o WhatsApp quando quiser.</p>
+
+      <div style="margin-top:52px" data-reveal data-rd=".24">
+        <div class="mock">
+          <div class="mock-bar"><i></i><i></i><i></i><span class="tiny" style="margin-left:8px">app.astro — painel</span></div>
+          <span class="chip warn mock-tag">Demonstração</span>
+          <div class="mock-body">
+            <div class="mock-side">
+              ${[['home','Dashboard',1],['box','Produtos',0],['cart','Pedidos',0],['users','Clientes',0],['ai','IA',0],['chat','WhatsApp',0]]
+                .map(([i,l,on])=>`<div class="mock-nav ${on?'on':''}">${ic(i,16)}${l}</div>`).join('')}
+            </div>
+            <div>
+              <div class="mini">
+                ${[['Faturamento (30d)','R$ 38.420'],['Pedidos','164'],['Ticket médio','R$ 234'],['Conversão','42%']]
+                  .map(([l,v])=>`<div><div class="l">${l}</div><div class="v num">${v}</div></div>`).join('')}
+              </div>
+              <div style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px">
+                <div class="between" style="margin-bottom:10px"><span class="tiny strong" style="color:var(--ink)">Faturamento por dia</span><span class="chip brand">últimos 14 dias</span></div>
+                <svg viewBox="0 0 300 70" preserveAspectRatio="none" style="width:100%;height:74px">
+                  <polyline points="0,58 23,52 46,55 69,41 92,45 115,33 138,36 161,24 184,28 207,18 230,22 253,11 276,15 300,6"
+                    fill="none" stroke="var(--brand)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div style="border:1px solid var(--line);border-radius:12px;padding:6px 14px;margin-top:12px">
+                ${[['MA','Marina — pedido criado pela IA','R$ 497'],['DS','Diego — aguardando vendedor','R$ 780']]
+                  .map(([a,t,v])=>`<div class="between" style="padding:10px 0"><div class="row"><span class="avatar" style="width:26px;height:26px;font-size:10px">${a}</span><span style="font-size:12.5px">${t}</span></div><span class="tiny strong num" style="color:var(--ink)">${v}</span></div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="tiny" style="margin-top:12px;text-align:center">Painel ilustrativo com dados de demonstração. Sua conta começa vazia.</p>
+      </div>
+    </div></section>
+
+    <section class="lp" id="problema"><div class="shell">
+      <h2 class="sec" data-reveal>Não é falta de venda. É falta de operação.</h2>
+      <p class="lead" data-reveal data-rd=".05">Quem vende por conversa costuma perder dinheiro nos mesmos cinco lugares.</p>
+      <div class="prob" style="margin-top:34px">
+        ${problemas.map((p,i)=>`<div class="prob-row" data-reveal data-rd="${(i*.04).toFixed(2)}"><h4>${p[0]}</h4><p>${p[1]}</p></div>`).join('')}
+      </div>
+      <div class="card pad-lg" style="margin-top:34px;border-color:var(--brand);background:var(--brand-soft)" data-reveal>
+        <h3 style="font-size:19px;font-weight:600;letter-spacing:-.02em">O Astro fecha esse circuito</h3>
+        <p style="font-size:14.5px;color:var(--ink-2);margin-top:8px;max-width:64ch">A conversa entra pelo WhatsApp, a IA responde com o que está cadastrado, o pedido nasce com os valores já calculados, o vendedor assume quando precisa e o cliente fica registrado com todo o histórico. Uma coisa puxa a outra sem ninguém copiar e colar.</p>
+      </div>
+    </div></section>
+
+    <section class="lp" id="recursos" style="padding-top:0"><div class="shell">
+      <h2 class="sec" data-reveal>O que tem dentro</h2>
+      <p class="lead" data-reveal data-rd=".05">Oito módulos que compartilham os mesmos dados.</p>
+      <div class="feat" style="margin-top:34px" data-reveal data-rd=".08">
+        ${feats.map(([i,t,d])=>`<div><span class="ic">${ic(i,19)}</span><h4>${t}</h4><p>${d}</p></div>`).join('')}
+      </div>
+    </div></section>
+
+    <section class="lp" id="como" style="padding-top:0"><div class="shell">
+      <h2 class="sec" data-reveal>Como funciona</h2>
+      <p class="lead" data-reveal data-rd=".05">Um caminho só, do primeiro "oi" até a recompra.</p>
+      <div class="flow" style="margin-top:34px">
+        ${fluxo.map((f,i)=>`<div class="flow-node" data-reveal data-rd="${(i*.05).toFixed(2)}"><div class="n">${i+1}</div><div class="t">${f[0]}</div><div class="d">${f[1]}</div></div>`).join('')}
+      </div>
+    </div></section>
+
+    <section class="lp" style="padding-top:0"><div class="shell">
+      <div class="grid" style="grid-template-columns:1fr;gap:22px">
+        <div class="card pad-lg" data-reveal>
+          <span class="chip brand">IA</span>
+          <h3 style="font-size:21px;font-weight:600;margin-top:14px;letter-spacing:-.02em">Ela só sabe o que você ensinou</h3>
+          <p style="font-size:14.5px;color:var(--ink-2);margin-top:8px;max-width:60ch">A IA lê seus produtos, preços, estoque e regras direto do sistema. Não há base de conhecimento paralela e não há resposta inventada: quando falta informação, ela transfere para uma pessoa.</p>
+          <div style="margin-top:20px;border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--card-2)">
+            <div style="max-width:80%;background:var(--card);border:1px solid var(--line);border-radius:14px 14px 14px 5px;padding:10px 13px;font-size:13.5px">Tem esse tênis no 42? Quanto fica no Pix?</div>
+            <div style="max-width:80%;margin:9px 0 0 auto;background:var(--brand);color:#fff;border-radius:14px 14px 5px 14px;padding:10px 13px;font-size:13.5px">Temos, sim. No Pix fica R$ 370,40 à vista. Quer que eu reserve?</div>
+            <p class="tiny" style="margin-top:12px">Exemplo de resposta gerada a partir de um produto cadastrado.</p>
+          </div>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr;gap:22px">
+          <div class="card pad-lg" data-reveal data-rd=".05">
+            <span class="chip">WhatsApp</span>
+            <h3 style="font-size:21px;font-weight:600;margin-top:14px;letter-spacing:-.02em">Atendimento com contexto</h3>
+            <p style="font-size:14.5px;color:var(--ink-2);margin-top:8px;max-width:60ch">Quando a conversa passa para uma pessoa, ela recebe o histórico completo, o cliente identificado e o pedido em andamento. Ninguém pede para o cliente repetir.</p>
+          </div>
+          <div class="card pad-lg" data-reveal data-rd=".1">
+            <span class="chip">Automações</span>
+            <h3 style="font-size:21px;font-weight:600;margin-top:14px;letter-spacing:-.02em">Gatilho, condição, ação</h3>
+            <p style="font-size:14.5px;color:var(--ink-2);margin-top:8px;max-width:60ch">Pedido acima de um valor notifica o gerente. Cliente sem resposta há duas horas recebe follow-up. Estoque baixo avisa antes de acabar. Você monta as regras uma vez.</p>
+          </div>
+        </div>
+      </div>
+    </div></section>
+
+    <section class="lp" id="planos" style="padding-top:0"><div class="shell">
+      <h2 class="sec" data-reveal>Planos</h2>
+      <p class="lead" data-reveal data-rd=".05">Os preços ainda estão sendo definidos. A estrutura de planos é esta.</p>
+      <div class="plans" style="margin-top:34px">
+        ${[['Início','Para quem está começando a organizar a operação',['1 usuário','Produtos, clientes e pedidos','Painel e relatórios básicos','Modo de demonstração'],false],
+           ['Equipe','Para quem já vende e precisa dividir o atendimento',['Até 5 usuários','IA de atendimento','Integração de WhatsApp','Automações e relatórios completos'],true],
+           ['Escala','Para operações com volume e times maiores',['Usuários ilimitados','API e webhooks','Múltiplos números','Registro de auditoria'],false]]
+          .map(([n,d,items,hi],i)=>`
+          <div class="plan ${hi?'hi':''}" data-reveal data-rd="${(i*.06).toFixed(2)}">
+            ${hi?'<span class="chip brand" style="align-self:flex-start;margin-bottom:10px">Mais completo</span>':''}
+            <h4 style="font-size:18px;font-weight:600">${n}</h4>
+            <p class="tiny" style="margin-top:6px;min-height:36px">${d}</p>
+            <div style="font-size:15px;font-weight:600;color:var(--ink-2);margin-top:10px">Preço a definir</div>
+            <ul>${items.map(x=>`<li>${ic('check',15,2.2)}<span>${x}</span></li>`).join('')}</ul>
+            <button class="btn ${hi?'btn-primary':'btn-ghost'}" data-nav="register">Criar conta</button>
+          </div>`).join('')}
+      </div>
+    </div></section>
+
+    <section class="lp" id="faq" style="padding-top:0"><div class="shell" style="max-width:820px">
+      <h2 class="sec" data-reveal>Perguntas frequentes</h2>
+      <div style="margin-top:26px;border-top:1px solid var(--line)" data-reveal data-rd=".05">
+        ${faq.map(([q,a],i)=>`<div class="faq-item">
+          <button class="faq-q" data-faq="${i}" aria-expanded="false">${q}<span data-faq-ic style="display:inline-block;color:var(--ink-3)">${ic('plus',17)}</span></button>
+          <div class="faq-a" id="faq-a-${i}"><p>${a}</p></div></div>`).join('')}
+      </div>
+    </div></section>
+
+    <section class="lp" style="padding-top:0"><div class="shell">
+      <div class="card pad-lg" style="text-align:center;padding:52px 26px;border-color:var(--brand)" data-reveal>
+        <h2 class="sec" style="margin:0 auto;max-width:18ch">Comece a operar com o Astro.</h2>
+        <p class="lead" style="margin:14px auto 0">Crie a conta, cadastre seus produtos e veja o painel com os seus números — não com os de exemplo.</p>
+        <div style="display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap">
+          <button class="btn btn-lg btn-primary" data-nav="register">Criar conta gratuita</button>
+          <button class="btn btn-lg btn-ghost" data-nav="login">Já tenho conta</button>
+        </div>
+      </div>
+    </div></section>
+  </main>
+
+  <footer class="lp-footer"><div class="shell">
+    <div class="fcols">
+      <div>
+        <div class="logo" style="margin-bottom:10px"><span class="logo-mark">A</span>Astro</div>
+        <p style="max-width:34ch">Plataforma para criar, vender e gerenciar sua operação de vendas por conversa.</p>
+      </div>
+      <div><h5>Produto</h5><a href="#recursos">Recursos</a><a href="#como">Como funciona</a><a href="#planos">Planos</a><a href="#faq">FAQ</a></div>
+      <div><h5>Conta</h5><a data-nav="login">Entrar</a><a data-nav="register">Criar conta</a><a data-nav="forgot">Recuperar senha</a></div>
+      <div><h5>Legal</h5><a>Termos de uso</a><a>Privacidade</a><a>Contato</a></div>
+    </div>
+    <div class="sep"></div>
+    <div class="between wrap"><span class="tiny">Astro — protótipo funcional. Todos os dados exibidos são os que você cadastrar.</span>
+    <button class="btn btn-sm btn-quiet" data-theme>Tema claro / escuro</button></div>
+  </div></footer>`;
+}
+
+function bindLanding(){
+  const h = $('#lph');
+  const onScroll = () => h && h.classList.toggle('stuck', scrollY > 8);
+  addEventListener('scroll', onScroll, {passive:true}); onScroll();
+  reveal(document);
+  $$('[data-scroll]').forEach(b=>b.onclick=()=>document.querySelector(b.dataset.scroll)?.scrollIntoView({behavior:RM.matches?'auto':'smooth'}));
+  $$('[data-faq]').forEach(b=>{
+    b.onclick = ()=>{
+      const panel = $('#faq-a-'+b.dataset.faq);
+      const open = b.getAttribute('aria-expanded')==='true';
+      b.setAttribute('aria-expanded', !open);
+      const full = panel.scrollHeight;
+      if(open){
+        anim(panel,[{height:full+'px'},{height:'0px'}],{d:M.dur.sm,e:M.ease.soft});
+        panel.style.height='0px';
+      } else {
+        panel.style.height='auto';
+        anim(panel,[{height:'0px'},{height:full+'px'}],{d:M.dur.md,e:M.ease.out})?.finished.then(()=>panel.style.height='auto');
+      }
+      const icn = b.querySelector('[data-faq-ic]');
+      anim(icn,[{transform:`rotate(${open?45:0}deg)`},{transform:`rotate(${open?0:45}deg)`}],{d:M.dur.sm});
+      icn.style.transform = `rotate(${open?0:45}deg)`;
+    };
+  });
+  const menu = $('[data-lpmenu]');
+  if(menu) menu.onclick = ()=>{
+    modal({title:'Navegar', body:`<div class="grid" style="gap:8px">
+      ${[['#problema','Produto'],['#recursos','Recursos'],['#como','Como funciona'],['#planos','Planos'],['#faq','FAQ']]
+        .map(([h,l])=>`<button class="btn btn-ghost" style="justify-content:flex-start" data-jump="${h}">${l}</button>`).join('')}
+      <button class="btn btn-primary" data-nav="register">Começar agora</button></div>`});
+    $$('[data-jump]').forEach(b=>b.onclick=()=>{closeModal();document.querySelector(b.dataset.jump)?.scrollIntoView({behavior:'smooth'})});
+  };
+}
+
+/* ================================================================
+   AUTENTICAÇÃO
+   ================================================================ */
+const authArt = `<div class="auth-art">
+  <div class="logo" style="color:inherit"><span class="logo-mark" style="background:var(--bg);color:var(--brand)">A</span>Astro</div>
+  <div>
+    <h3>Uma conversa vira pedido. Um pedido vira operação.</h3>
+    <div style="margin-top:26px;display:flex;flex-direction:column;gap:10px">
+      ${['Cadastre produtos e clientes','Configure a IA com as suas regras','Conecte o WhatsApp quando quiser','Acompanhe os seus números reais']
+        .map(t=>`<div style="display:flex;gap:10px;align-items:center;font-size:14px;opacity:.82">${ic('check',15,2.2)}${t}</div>`).join('')}
+    </div>
+  </div>
+  <p style="font-size:12.5px;opacity:.55;max-width:40ch">Sua conta começa vazia. Os números do painel são calculados a partir do que você cadastrar.</p>
+</div>`;
+
+const fieldErr = (id,msg) => { const f=$('#'+id); if(!f) return; f.setAttribute('aria-invalid','true');
+  const p=el(`<span class="err-msg">${esc(msg)}</span>`); f.parentElement.appendChild(p);
+  anim(p,[{opacity:0,transform:'translateY(-3px)'},{opacity:1,transform:'none'}],{d:M.dur.xs}); };
+const clearErrs = () => { $$('.err-msg').forEach(e=>e.remove()); $$('[aria-invalid]').forEach(e=>e.removeAttribute('aria-invalid')); };
+const validEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+
+function viewLogin(){
+  return `<div class="auth">${authArt}<div class="auth-box">
+    <div class="logo" style="margin-bottom:26px"><span class="logo-mark">A</span>Astro</div>
+    <h1 style="font-size:26px;font-weight:600;letter-spacing:-.025em">Entrar</h1>
+    <p class="muted" style="font-size:14px;margin:6px 0 24px">Acesse o painel da sua empresa.</p>
+    <label class="field"><span>E-mail</span><input class="input" id="l-mail" type="email" autocomplete="email" placeholder="voce@empresa.com"></label>
+    <label class="field"><span>Senha</span><input class="input" id="l-pass" type="password" autocomplete="current-password"></label>
+    <div class="between" style="margin:2px 0 20px">
+      <span class="tiny"></span>
+      <button class="tiny strong" style="color:var(--brand)" data-nav="forgot">Esqueci a senha</button>
+    </div>
+    <button class="btn btn-primary" style="width:100%" id="l-go" data-loading="Entrando">Entrar</button>
+    <p style="text-align:center;margin-top:22px;font-size:14px" class="muted">Ainda não tem conta?
+      <button style="font-weight:600;color:var(--brand)" data-nav="register">Criar agora</button></p>
+    <p style="text-align:center;margin-top:14px"><button class="tiny" data-nav="landing">Voltar para o site</button></p>
+  </div></div>`;
+}
+function bindLogin(){
+  $('#l-go').onclick = e => withLoading(e.currentTarget, async ()=>{
+    clearErrs();
+    const mail=$('#l-mail').value.trim(), pass=$('#l-pass').value;
+    if(!validEmail(mail)) return fieldErr('l-mail','Informe um e-mail válido.');
+    if(!pass) return fieldErr('l-pass','Digite sua senha.');
+    try{
+      await api.login({email:mail, senha:pass});
+      await api.restore();
+      toast('Bem-vindo de volta, '+S.user.nome.split(' ')[0]);
+      go(S.company?.onboarded ? 'dashboard' : 'onboarding');
+    }catch(err){
+      fieldErr(err.message.includes('Senha')?'l-pass':'l-mail', err.message);
+    }
+  });
+  $('#l-pass').onkeydown = e => { if(e.key==='Enter') $('#l-go').click(); };
+}
+
+function viewRegister(){
+  return `<div class="auth">${authArt}<div class="auth-box">
+    <div class="logo" style="margin-bottom:26px"><span class="logo-mark">A</span>Astro</div>
+    <h1 style="font-size:26px;font-weight:600;letter-spacing:-.025em">Criar conta</h1>
+    <p class="muted" style="font-size:14px;margin:6px 0 24px">Você cria a empresa junto com a conta.</p>
+    <label class="field"><span>Seu nome</span><input class="input" id="r-nome" autocomplete="name" placeholder="Nome e sobrenome"></label>
+    <label class="field"><span>Nome da empresa</span><input class="input" id="r-emp" autocomplete="organization" placeholder="Como seus clientes conhecem você"></label>
+    <label class="field"><span>E-mail</span><input class="input" id="r-mail" type="email" autocomplete="email" placeholder="voce@empresa.com"></label>
+    <label class="field"><span>Senha</span><input class="input" id="r-pass" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres"></label>
+    <button class="btn btn-primary" style="width:100%;margin-top:6px" id="r-go" data-loading="Criando conta">Criar conta</button>
+    <p style="text-align:center;margin-top:22px;font-size:14px" class="muted">Já tem conta?
+      <button style="font-weight:600;color:var(--brand)" data-nav="login">Entrar</button></p>
+    <p style="text-align:center;margin-top:14px"><button class="tiny" data-nav="landing">Voltar para o site</button></p>
+  </div></div>`;
+}
+function bindRegister(){
+  $('#r-go').onclick = e => withLoading(e.currentTarget, async ()=>{
+    clearErrs();
+    const nome=$('#r-nome').value.trim(), emp=$('#r-emp').value.trim(),
+          mail=$('#r-mail').value.trim(), pass=$('#r-pass').value;
+    let bad=false;
+    if(nome.split(/\s+/).length<2){ fieldErr('r-nome','Escreva nome e sobrenome.'); bad=true; }
+    if(!emp){ fieldErr('r-emp','Informe o nome da empresa.'); bad=true; }
+    if(!validEmail(mail)){ fieldErr('r-mail','Informe um e-mail válido.'); bad=true; }
+    if(pass.length<8){ fieldErr('r-pass','Use pelo menos 8 caracteres.'); bad=true; }
+    if(bad) return;
+    try{
+      await api.register({nome, email:mail, senha:pass, empresa:emp});
+      await api.login({email:mail, senha:pass});
+      await api.restore();
+      go('onboarding');
+    }catch(err){ fieldErr('r-mail', err.message); }
+  });
+}
+
+function viewForgot(){
+  return `<div class="auth">${authArt}<div class="auth-box">
+    <div class="logo" style="margin-bottom:26px"><span class="logo-mark">A</span>Astro</div>
+    <h1 style="font-size:26px;font-weight:600;letter-spacing:-.025em">Recuperar senha</h1>
+    <p class="muted" style="font-size:14px;margin:6px 0 24px">Informe o e-mail da conta para definir uma nova senha.</p>
+    <label class="field"><span>E-mail</span><input class="input" id="f-mail" type="email" placeholder="voce@empresa.com"></label>
+    <button class="btn btn-primary" style="width:100%" id="f-go" data-loading="Verificando">Continuar</button>
+    <p style="text-align:center;margin-top:20px"><button class="tiny strong" style="color:var(--brand)" data-nav="login">Voltar para o login</button></p>
+  </div></div>`;
+}
+function bindForgot(){
+  $('#f-go').onclick = e => withLoading(e.currentTarget, async ()=>{
+    clearErrs();
+    const mail = $('#f-mail').value.trim();
+    if(!validEmail(mail)) return fieldErr('f-mail','Informe um e-mail válido.');
+    const users = await kv.get(K.users, []);
+    if(!users.some(u=>u.email.toLowerCase()===mail.toLowerCase()))
+      return fieldErr('f-mail','Não encontramos uma conta com este e-mail.');
+    sessionStorageEmail = mail;
+    go('reset');
+  });
+}
+let sessionStorageEmail = '';
+
+function viewReset(){
+  return `<div class="auth">${authArt}<div class="auth-box">
+    <div class="logo" style="margin-bottom:26px"><span class="logo-mark">A</span>Astro</div>
+    <h1 style="font-size:26px;font-weight:600;letter-spacing:-.025em">Nova senha</h1>
+    <p class="muted" style="font-size:14px;margin:6px 0 24px">Definindo a senha de <strong style="color:var(--ink)">${esc(sessionStorageEmail)}</strong>.</p>
+    <label class="field"><span>Nova senha</span><input class="input" id="n-pass" type="password" placeholder="Mínimo 8 caracteres"></label>
+    <label class="field"><span>Repita a senha</span><input class="input" id="n-pass2" type="password"></label>
+    <button class="btn btn-primary" style="width:100%" id="n-go" data-loading="Salvando">Salvar nova senha</button>
+  </div></div>`;
+}
+function bindReset(){
+  $('#n-go').onclick = e => withLoading(e.currentTarget, async ()=>{
+    clearErrs();
+    const a=$('#n-pass').value, b=$('#n-pass2').value;
+    if(a.length<8) return fieldErr('n-pass','Use pelo menos 8 caracteres.');
+    if(a!==b) return fieldErr('n-pass2','As senhas não são iguais.');
+    await api.resetPassword(sessionStorageEmail, a);
+    toast('Senha alterada. Faça login com a nova senha.');
+    go('login');
+  });
+}
+
+/* ================================================================
+   ONBOARDING — cria dados reais, não decoração
+   ================================================================ */
+let obStep = 0;
+function viewOnboarding(){
+  return `<div style="min-height:100dvh;display:grid;place-items:center;padding:24px">
+    <div style="width:100%;max-width:520px">
+      <div class="logo" style="margin-bottom:26px"><span class="logo-mark">A</span>Astro</div>
+      <div class="card pad-lg" id="ob-card"></div>
+      <p style="text-align:center;margin-top:18px"><button class="tiny" id="ob-skip">Pular e ir para o painel</button></p>
+    </div></div>`;
+}
+function bindOnboarding(){
+  $('#ob-skip').onclick = async ()=>{ await api.company({onboarded:true}); go('dashboard'); };
+  obStep = 0; renderOb();
+}
+function renderOb(){
+  const steps = [
+    { t:'Confirme os dados da empresa', d:'É o nome que aparece para seus clientes e nas suas notas.',
+      body:`<label class="field"><span>Nome da empresa</span><input class="input" id="ob-nome" value="${esc(S.company.nome)}"></label>
+            <label class="field"><span>Telefone de atendimento</span><input class="input" id="ob-tel" placeholder="+55 00 00000-0000" value="${esc(S.company.telefone||'')}"></label>`,
+      cta:'Continuar',
+      run: async ()=>{
+        const n = $('#ob-nome').value.trim();
+        if(!n) throw new Error('O nome da empresa é obrigatório.');
+        await api.company({nome:n, telefone:$('#ob-tel').value.trim()});
+      }},
+    { t:'Cadastre seu primeiro produto', d:'A IA responde sobre preço e estoque a partir daqui. Você pode pular e cadastrar depois.',
+      body:`<label class="field"><span>Nome do produto</span><input class="input" id="ob-p" placeholder="Ex.: Curso de Copywriting"></label>
+            <div class="grid" style="grid-template-columns:1fr 1fr">
+              <label class="field"><span>Preço</span><input class="input" id="ob-pr" inputmode="decimal" placeholder="0,00"></label>
+              <label class="field"><span>Estoque</span><input class="input" id="ob-es" inputmode="numeric" placeholder="deixe vazio se for digital"></label>
+            </div>`,
+      cta:'Continuar',
+      run: async ()=>{
+        const n = $('#ob-p').value.trim(); if(!n) return;
+        const es = $('#ob-es').value.trim();
+        await api.create('products', { nome:n, preco:parseMoney($('#ob-pr').value), promo:0,
+          estoque: es===''? null : parseInt(es)||0, sku:'', ean:'', categoria:'', descricao:'',
+          variacoes:[], imagem:'', ativo:true });
+      }},
+    { t:'Como a IA deve atender', d:'Escreva em português. Ela usa isto junto com seus produtos cadastrados.',
+      body:`<label class="field"><span>Tom de voz</span><select class="select" id="ob-tom">
+              <option>Próximo e objetivo</option><option>Formal</option><option>Informal e descontraído</option></select></label>
+            <label class="field"><span>Regras de atendimento</span><textarea class="textarea" id="ob-rg" placeholder="Ex.: nunca prometer prazo menor que 3 dias úteis; transferir para uma pessoa quando o cliente pedir desconto."></textarea></label>`,
+      cta:'Concluir',
+      run: async ()=>{
+        const cfg = await api.getCfg('ai', {});
+        await api.setCfg('ai', { ...cfg, nome:S.company.nome, tom:$('#ob-tom').value, regras:$('#ob-rg').value.trim(), ativa:false });
+        await api.company({onboarded:true});
+      }}
+  ];
+  const s = steps[obStep];
+  const c = $('#ob-card');
+  c.innerHTML = `
+    <div class="row" style="gap:6px;margin-bottom:18px">${steps.map((_,i)=>`<span style="flex:1;height:4px;border-radius:2px;background:${i<=obStep?'var(--brand)':'var(--line)'}"></span>`).join('')}</div>
+    <p class="tiny">Passo ${obStep+1} de ${steps.length}</p>
+    <h2 style="font-size:21px;font-weight:600;letter-spacing:-.02em;margin:6px 0 6px">${s.t}</h2>
+    <p class="muted" style="font-size:14px;margin-bottom:20px">${s.d}</p>
+    ${s.body}
+    <button class="btn btn-primary" style="width:100%;margin-top:6px" id="ob-next" data-loading="Salvando">${s.cta}</button>`;
+  stagger(c.children, .035);
+  $('#ob-next').onclick = e => withLoading(e.currentTarget, async ()=>{
+    await s.run();
+    if(obStep < steps.length-1){ obStep++; renderOb(); }
+    else { toast('Tudo pronto. Seu painel está no ar.'); go('dashboard'); }
+  });
+}
+function parseMoney(v){
+  if(!v) return 0;
+  const s = String(v).replace(/[^\d,.-]/g,'').replace(/\.(?=\d{3}\b)/g,'').replace(',','.');
+  return Math.max(0, parseFloat(s)||0);
+}
+
+/* ================================================================
+   SHELL DO APP
+   ================================================================ */
+const NAVS = [
+  ['dashboard','Dashboard','home','Operação'],
+  ['produtos','Produtos','box'],
+  ['pedidos','Pedidos','cart'],
+  ['clientes','Clientes','users'],
+  ['ia','IA','ai'],
+  ['whatsapp','WhatsApp','chat'],
+  ['equipe','Equipe','team'],
+  ['automacoes','Automações','bolt','Crescimento'],
+  ['relatorios','Relatórios','chart'],
+  ['integracoes','Integrações','plug'],
+  ['configuracoes','Configurações','gear','Conta']
+];
+let page = 'dashboard';
+
+function viewApp(){
+  return `
+  <aside class="sidebar" id="sb">
+    <div class="between" style="padding:16px 16px 10px">
+      <div class="logo"><span class="logo-mark">A</span>Astro</div>
+      <button class="btn btn-icon btn-quiet" id="sb-close" style="display:none" aria-label="Fechar menu">✕</button>
+    </div>
+    <nav class="nav">${NAVS.map(([id,l,i,g])=>
+      (g?`<div class="nav-group">${g}</div>`:'')+`<button class="nav-item" data-page="${id}">${ic(i)}<span>${l}</span></button>`).join('')}</nav>
+    <div style="padding:12px;border-top:1px solid var(--line)">
+      <button class="nav-item" style="width:100%" data-perfil>
+        <span class="avatar" style="width:28px;height:28px;font-size:11px">${initials(S.user.nome)}</span>
+        <span class="stack" style="align-items:flex-start;gap:0;overflow:hidden;text-align:left">
+          <span style="font-size:13px;font-weight:600;color:var(--ink)">${esc(S.user.nome)}</span>
+          <span class="tiny">${esc(S.company.nome)}</span></span>
+      </button>
+    </div>
+  </aside>
+  <div class="main">
+    ${S.demo?`<div class="demo-bar"><span><strong>Modo demonstração</strong> — os dados abaixo são de exemplo.</span>
+      <button class="btn btn-sm btn-quiet" data-demo-off>Apagar dados de demonstração</button></div>`:''}
+    <header class="topbar">
+      <button class="btn btn-icon btn-quiet" id="sb-open" style="display:none" aria-label="Abrir menu">☰</button>
+      <h2 style="font-size:16.5px;font-weight:600" id="tb-title">Dashboard</h2>
+      <div style="margin-left:auto" class="row">
+        <button class="btn btn-icon btn-quiet" data-theme aria-label="Alternar tema">◐</button>
+        <button class="btn btn-icon btn-quiet" data-notif aria-label="Notificações">${ic('bell',18)}</button>
+        <button class="avatar" data-perfil aria-label="Perfil">${initials(S.user.nome)}</button>
+      </div>
+    </header>
+    <main class="page" id="view"></main>
+  </div>
+  <nav class="bnav">${[['dashboard','Início','home'],['pedidos','Pedidos','cart'],['ia','IA','ai'],['whatsapp','WhatsApp','chat'],['__more','Mais','more']]
+    .map(([id,l,i])=>`<button class="bn" data-bpage="${id}">${ic(i,21)}<span>${l}</span></button>`).join('')}</nav>`;
+}
+
+function bindApp(){
+  $$('[data-page]').forEach(b=>b.onclick=()=>{ openPage(b.dataset.page); closeNav(); });
+  $$('[data-bpage]').forEach(b=>b.onclick=()=> b.dataset.bpage==='__more' ? menuMais() : openPage(b.dataset.bpage));
+  $('#sb-open').onclick = openNav;
+  $('#sb-close').onclick = closeNav;
+  const dof = $('[data-demo-off]'); if(dof) dof.onclick = limparDemo;
+  resp(); addEventListener('resize', resp);
+  openPage(page);
+}
+function resp(){
+  const small = innerWidth < 1024;
+  const o=$('#sb-open'), c=$('#sb-close');
+  if(o) o.style.display = small?'':'none';
+  if(c) c.style.display = small?'':'none';
+  if(!small) closeNav(true);
+}
+function openNav(){
+  const sb=$('#sb');
+  const sc = el('<div class="scrim-nav"></div>');
+  document.body.appendChild(sc);
+  sc.onclick = closeNav;
+  sb.style.visibility='visible';
+  anim(sb,[{transform:'translateX(-100%)'},{transform:'none'}],{d:M.dur.md,e:M.ease.out});
+  sb.style.transform='none';
+  anim(sc,[{opacity:0},{opacity:1}],{d:M.dur.sm,e:M.ease.soft});
+  sc.style.opacity='1';
+}
+function closeNav(instant){
+  const sb=$('#sb'), sc=document.querySelector('.scrim-nav');
+  if(sc){ if(instant) sc.remove(); else { const a=anim(sc,[{opacity:1},{opacity:0}],{d:M.dur.xs}); a?a.finished.then(()=>sc.remove()):sc.remove(); } }
+  if(sb && innerWidth<1024){
+    if(!instant) anim(sb,[{transform:'none'},{transform:'translateX(-100%)'}],{d:M.dur.sm,e:M.ease.soft});
+    sb.style.transform='translateX(-100%)';
+    setTimeout(()=>{ if(innerWidth<1024) sb.style.visibility='hidden'; }, instant?0:230);
+  }
+}
+function menuMais(){
+  modal({title:'Todas as seções', body:`<div class="grid" style="grid-template-columns:repeat(2,1fr);gap:8px">
+    ${NAVS.map(([id,l,i])=>`<button class="btn btn-ghost" style="justify-content:flex-start;height:50px" data-jp="${id}">${ic(i)} ${l}</button>`).join('')}</div>`});
+  $$('[data-jp]').forEach(b=>b.onclick=()=>{ closeModal(); openPage(b.dataset.jp); });
+}
+
+async function openPage(id){
+  page = id;
+  $$('[data-page]').forEach(b=>b.classList.toggle('on', b.dataset.page===id));
+  $$('[data-bpage]').forEach(b=>b.classList.toggle('on', b.dataset.bpage===id));
+  const t = NAVS.find(n=>n[0]===id); if($('#tb-title')) $('#tb-title').textContent = t?t[1]:'Astro';
+  const v = $('#view');
+  v.innerHTML = `<div class="grid" style="gap:14px"><div class="skel" style="height:26px;width:220px"></div>
+    <div class="skel" style="height:92px"></div><div class="skel" style="height:220px"></div></div>`;
+  scrollTo({top:0});
+  try{
+    const html = await (PAGE[id] || PAGE.dashboard)();
+    v.innerHTML = html;
+    stagger(v.children, .04);
+    (BIND[id] || (()=>{}))();
+    bindCommon(v);
+  }catch(err){
+    v.innerHTML = `<div class="empty"><div class="ic">${ic('bell',22)}</div>
+      <p class="strong">Não foi possível carregar esta tela</p>
+      <p class="tiny" style="margin:6px 0 16px">${esc(err.message)}</p>
+      <button class="btn btn-primary" onclick="openPage('${id}')">Tentar de novo</button></div>`;
+  }
+}
+function bindCommon(scope){
+  scope.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>openPage(b.dataset.page));
+  scope.querySelectorAll('[data-switch]').forEach(s=>{
+    if(s.dataset.b) return; s.dataset.b='1';
+    s.onclick=()=>{ const on = s.getAttribute('aria-checked')!=='true'; s.setAttribute('aria-checked',on);
+      s.dispatchEvent(new CustomEvent('toggled',{detail:on, bubbles:true})); };
+  });
+}
+function phead(t, s, actions=''){
+  return `<div class="phead between wrap"><div><h1>${esc(t)}</h1><p>${s}</p></div><div class="row wrap">${actions}</div></div>`;
+}
+function vazio(icone, titulo, texto, cta=''){
+  return `<div class="empty"><div class="ic">${ic(icone,22)}</div>
+    <p class="strong" style="font-size:16px">${esc(titulo)}</p>
+    <p class="tiny" style="margin:7px auto 18px;max-width:44ch">${esc(texto)}</p>${cta}</div>`;
+}
+
+const PAGE = {}, BIND = {};
+
+/* ================================================================
+   DASHBOARD — tudo calculado
+   ================================================================ */
+PAGE.dashboard = async () => {
+  const m = await api.metrics(30);
+  const orders = await api.list('orders');
+  const acoes = `<button class="btn btn-ghost" data-page="produtos">Produtos</button>
+                 <button class="btn btn-primary" data-novo-pedido>${ic('plus',16,2.2)} Novo pedido</button>`;
+  if(m.vazio){
+    return phead('Olá, '+esc(S.user.nome.split(' ')[0]),
+      'Sua conta está vazia — é assim que deve ser. Os números aparecem conforme você cadastra e vende.', acoes)
+      + `<div class="kpis" style="margin-bottom:20px">
+          ${[['Faturamento (30 dias)',BRL(0)],['Pedidos','0'],['Clientes','0'],['Produtos ativos','0']]
+            .map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="d">nenhum dado ainda</div></div>`).join('')}
+        </div>
+        ${vazio('box','Comece cadastrando um produto',
+          'A IA responde sobre preço e estoque a partir do catálogo, e os pedidos precisam de produtos para calcular valores.',
+          `<div class="row" style="justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-primary" data-page="produtos">Cadastrar produto</button>
+            <button class="btn btn-ghost" data-demo-on>Ver com dados de demonstração</button></div>`)}`;
+  }
+  const max = Math.max(...m.serie.map(p=>p.valor), 1);
+  const pts = m.serie.map((p,i)=>`${(i/(m.serie.length-1||1))*100},${44-(p.valor/max)*40}`).join(' ');
+  const recentes = orders.slice(0,5);
+  return phead('Olá, '+esc(S.user.nome.split(' ')[0]),
+      `Últimos 30 dias em ${esc(S.company.nome)}.`, acoes)
+    + `<div class="kpis" style="margin-bottom:16px">
+        ${[['Faturamento (30 dias)',BRL(m.faturamento), `${m.pagos} pedido${m.pagos===1?'':'s'} pago${m.pagos===1?'':'s'}`],
+           ['Pedidos',NUM(m.pedidos), `${m.cancelados} cancelado${m.cancelados===1?'':'s'}`],
+           ['Ticket médio',BRL(m.ticket), m.pagos?'sobre pedidos pagos':'sem pedidos pagos'],
+           ['Conversão',m.conversao.toFixed(0)+'%','pedidos pagos ÷ criados']]
+          .map(([l,v,d])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('')}
+      </div>
+      <div class="card pad-lg" style="margin-bottom:16px">
+        <div class="between wrap" style="margin-bottom:12px">
+          <div><div class="strong" style="font-size:14.5px">Faturamento por dia</div>
+            <div class="tiny">${m.serie.length} dias · calculado sobre pedidos pagos</div></div>
+          <span class="chip brand">${BRL(m.faturamento)}</span>
+        </div>
+        <svg viewBox="0 0 100 48" preserveAspectRatio="none" style="width:100%;height:150px">
+          <defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--brand)" stop-opacity=".22"/>
+            <stop offset="100%" stop-color="var(--brand)" stop-opacity="0"/></linearGradient></defs>
+          <polygon points="0,48 ${pts} 100,48" fill="url(#gg)"/>
+          <polyline points="${pts}" fill="none" stroke="var(--brand)" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+        </svg>
+        <div class="between tiny" style="margin-top:6px">
+          <span>${dfmt(m.serie[0].dia)}</span><span>${dfmt(m.serie[m.serie.length-1].dia)}</span></div>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr;gap:16px">
+        <div class="card">
+          <div class="pad between" style="border-bottom:1px solid var(--line)">
+            <span class="strong" style="font-size:14.5px">Pedidos recentes</span>
+            <button class="btn btn-sm btn-quiet" data-page="pedidos">Ver todos</button></div>
+          ${recentes.length ? recentes.map(o=>`
+            <button style="width:100%;text-align:left;display:flex;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);align-items:center" data-ped="${o.id}">
+              <span class="avatar">${initials(o.clienteNome)}</span>
+              <span class="stack" style="flex:1;min-width:0">
+                <span class="strong" style="font-size:13.5px">${esc(o.clienteNome)}</span>
+                <span class="tiny">${esc(o.numero)} · ${dtfmt(o.criadoEm)} · ${esc(o.origem)}</span></span>
+              <span class="stack" style="align-items:flex-end">
+                <span class="strong num" style="font-size:13.5px">${BRL(o.total)}</span>
+                <span class="chip ${statusKind(o.status)}" style="height:20px;font-size:11px">${o.status}</span></span>
+            </button>`).join('')
+            : `<div class="pad tiny" style="padding:26px;text-align:center">Nenhum pedido ainda.</div>`}
+        </div>
+        <div class="card pad">
+          <div class="strong" style="font-size:14.5px;margin-bottom:12px">Mais vendidos</div>
+          ${m.topProdutos.length ? m.topProdutos.map(([n,q])=>{
+            const mx = m.topProdutos[0][1];
+            return `<div style="margin-bottom:12px"><div class="between tiny" style="margin-bottom:5px">
+              <span style="color:var(--ink)">${esc(n)}</span><span class="num">${q}</span></div>
+              <div style="height:6px;background:var(--card-2);border-radius:4px;overflow:hidden">
+                <div style="height:100%;width:${(q/mx)*100}%;background:var(--brand);border-radius:4px"></div></div></div>`;
+          }).join('') : `<p class="tiny">Nenhum produto vendido ainda.</p>`}
+        </div>
+      </div>`;
+};
+const statusKind = s => ({'Rascunho':'','Aguardando pagamento':'warn','Pago':'ok','Concluído':'ok','Cancelado':'err'}[s]||'');
+BIND.dashboard = ()=>{
+  const b = $('[data-novo-pedido]'); if(b) b.onclick = formPedido;
+  const d = $('[data-demo-on]'); if(d) d.onclick = carregarDemo;
+};
+
+/* ================================================================
+   PRODUTOS
+   ================================================================ */
+let pFilter = 'ativos';
+PAGE.produtos = async () => {
+  const all = await api.list('products');
+  const rows = pFilter==='ativos' ? all.filter(p=>p.ativo) : pFilter==='inativos' ? all.filter(p=>!p.ativo) : all;
+  const h = phead('Produtos','O catálogo alimenta os pedidos e as respostas da IA.',
+    `<button class="btn btn-primary" data-novo>${ic('plus',16,2.2)} Cadastrar produto</button>`);
+  if(!all.length) return h + vazio('box','Nenhum produto cadastrado',
+    'Cadastre o primeiro produto com nome e preço. Você refina descrição, estoque e variações depois.',
+    `<button class="btn btn-primary" data-novo>Cadastrar produto</button>`);
+  return h + `<div class="tabs">${[['ativos','Ativos'],['inativos','Inativos'],['todos','Todos']]
+      .map(([k,l])=>`<button class="tab" aria-selected="${k===pFilter}" data-pf="${k}">${l} (${
+        k==='ativos'?all.filter(p=>p.ativo).length:k==='inativos'?all.filter(p=>!p.ativo).length:all.length})</button>`).join('')}</div>`
+    + (rows.length ? `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(272px,1fr))">
+      ${rows.map(p=>`<button class="card pad" style="text-align:left" data-prod="${p.id}">
+        <div class="row" style="align-items:flex-start">
+          <span class="thumb">${p.imagem?`<img src="${esc(p.imagem)}" alt="">`:ic('box',20)}</span>
+          <span class="stack" style="flex:1;min-width:0">
+            <span class="strong" style="font-size:14.5px">${esc(p.nome)}</span>
+            <span class="tiny">${esc(p.categoria||'Sem categoria')}${p.sku?' · SKU '+esc(p.sku):''}</span></span></div>
+        ${p.descricao?`<p class="tiny" style="margin:12px 0 0">${esc(p.descricao).slice(0,110)}</p>`:''}
+        <div class="sep"></div>
+        <div class="between">
+          <span class="strong num">${p.promo?`<span style="text-decoration:line-through;color:var(--ink-3);font-weight:400">${BRL(p.preco)}</span> ${BRL(p.promo)}`:BRL(p.preco)}</span>
+          <span class="chip ${p.estoque===null?'info':p.estoque<=0?'err':p.estoque<5?'warn':'ok'}">${
+            p.estoque===null?'Digital':p.estoque<=0?'Sem estoque':p.estoque+' em estoque'}</span></div>
+        ${!p.ativo?'<div style="margin-top:10px"><span class="chip">Inativo</span></div>':''}
+      </button>`).join('')}</div>`
+    : vazio('box','Nada nesta aba','Troque o filtro acima ou cadastre um produto novo.',
+        `<button class="btn btn-primary" data-novo>Cadastrar produto</button>`));
+};
+BIND.produtos = ()=>{
+  $$('[data-pf]').forEach(b=>b.onclick=()=>{ pFilter=b.dataset.pf; openPage('produtos'); });
+  $$('[data-novo]').forEach(b=>b.onclick=()=>formProduto());
+  $$('[data-prod]').forEach(b=>b.onclick=()=>formProduto(b.dataset.prod));
+};
+async function formProduto(id){
+  const rows = await api.list('products');
+  const p = id ? rows.find(r=>r.id===id) : { nome:'',descricao:'',preco:0,promo:0,estoque:null,sku:'',ean:'',
+    categoria:'',variacoes:[],imagem:'',ativo:true };
+  const m = modal({ title: id?'Editar produto':'Cadastrar produto', sub: id?`Criado em ${dtfmt(p.criadoEm)}`:'Só nome e preço são obrigatórios.',
+    body:`
+      <label class="field"><span>Nome *</span><input class="input" id="p-nome" value="${esc(p.nome)}"></label>
+      <label class="field"><span>Descrição — a IA responde com base neste texto</span><textarea class="textarea" id="p-desc">${esc(p.descricao)}</textarea></label>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <label class="field"><span>Preço *</span><input class="input" id="p-preco" inputmode="decimal" value="${p.preco?String(p.preco).replace('.',','):''}"></label>
+        <label class="field"><span>Preço promocional</span><input class="input" id="p-promo" inputmode="decimal" value="${p.promo?String(p.promo).replace('.',','):''}"></label>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <label class="field"><span>Estoque</span><input class="input" id="p-est" inputmode="numeric" placeholder="vazio = digital" value="${p.estoque??''}"></label>
+        <label class="field"><span>Categoria</span><input class="input" id="p-cat" value="${esc(p.categoria)}"></label>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <label class="field"><span>SKU</span><input class="input" id="p-sku" value="${esc(p.sku)}"></label>
+        <label class="field"><span>EAN</span><input class="input" id="p-ean" value="${esc(p.ean)}"></label>
+      </div>
+      <label class="field"><span>Variações — separadas por vírgula</span><input class="input" id="p-var" placeholder="P, M, G" value="${esc((p.variacoes||[]).join(', '))}"></label>
+      <label class="field"><span>Imagem</span><input class="input" type="file" id="p-img" accept="image/*">
+        <span class="hint">A imagem é guardada junto com o produto.</span></label>
+      <div class="between" style="padding:10px 0"><span style="font-size:14px">Produto ativo no catálogo</span>
+        <button class="switch" aria-checked="${p.ativo}" id="p-ativo" data-switch></button></div>`,
+    foot: `${id?'<button class="btn btn-danger" id="p-del">Excluir</button>':''}
+           <button class="btn btn-ghost" data-close>Cancelar</button>
+           <button class="btn btn-primary" id="p-save">${id?'Salvar alterações':'Cadastrar'}</button>`});
+  bindCommon(m);
+  let imgData = p.imagem;
+  $('#p-img').onchange = e => {
+    const f = e.target.files[0]; if(!f) return;
+    if(f.size > 1.6e6) return toast('Escolha uma imagem de até 1,5 MB.','err');
+    const r = new FileReader(); r.onload = () => { imgData = r.result; toast('Imagem carregada.'); }; r.readAsDataURL(f);
+  };
+  if(id) $('#p-del').onclick = async ()=>{
+    if(await confirmar({title:'Excluir produto?', texto:`“${p.nome}” sai do catálogo. Pedidos antigos mantêm o registro do item.`, cta:'Excluir'})){
+      await api.remove('products', id); closeModal(); openPage('produtos'); toast('Produto excluído.','warn');
+    }
+  };
+  $('#p-save').onclick = e => withLoading(e.currentTarget, async ()=>{
+    clearErrs();
+    const nome = $('#p-nome').value.trim(), preco = parseMoney($('#p-preco').value);
+    if(!nome) return fieldErr('p-nome','Informe o nome do produto.');
+    if(!preco) return fieldErr('p-preco','Informe um preço maior que zero.');
+    const est = $('#p-est').value.trim();
+    const data = { nome, descricao:$('#p-desc').value.trim(), preco, promo:parseMoney($('#p-promo').value),
+      estoque: est===''? null : Math.max(0,parseInt(est)||0), categoria:$('#p-cat').value.trim(),
+      sku:$('#p-sku').value.trim(), ean:$('#p-ean').value.trim(),
+      variacoes:$('#p-var').value.split(',').map(s=>s.trim()).filter(Boolean),
+      imagem:imgData, ativo:$('#p-ativo').getAttribute('aria-checked')==='true' };
+    id ? await api.update('products', id, data) : await api.create('products', data);
+    closeModal(); openPage('produtos'); toast(id?'Produto atualizado.':'Produto cadastrado.');
+  });
+}
+
+/* ================================================================
+   CLIENTES
+   ================================================================ */
+let cBusca = '';
+PAGE.clientes = async () => {
+  const all = await api.list('customers');
+  const orders = await api.list('orders');
+  const q = cBusca.toLowerCase();
+  const rows = q ? all.filter(c=>(c.nome+c.email+c.telefone).toLowerCase().includes(q)) : all;
+  const totalDe = c => orders.filter(o=>o.clienteId===c.id && (o.status==='Pago'||o.status==='Concluído')).reduce((s,o)=>s+o.total,0);
+  const pedidosDe = c => orders.filter(o=>o.clienteId===c.id).length;
+  const h = phead('Clientes','Quem já comprou ou conversou com você, com o histórico junto.',
+    `<button class="btn btn-primary" data-novo>${ic('plus',16,2.2)} Novo cliente</button>`);
+  if(!all.length) return h + vazio('users','Nenhum cliente cadastrado',
+    'Cadastre manualmente ou deixe que os clientes sejam criados automaticamente quando um pedido for aberto.',
+    `<button class="btn btn-primary" data-novo>Cadastrar cliente</button>`);
+  return h + `<div style="position:relative;max-width:360px;margin-bottom:18px">
+      <span style="position:absolute;left:12px;top:12px;color:var(--ink-3)">${ic('search',17)}</span>
+      <input class="input" id="c-busca" style="padding-left:38px" placeholder="Buscar por nome, e-mail ou telefone" value="${esc(cBusca)}"></div>`
+    + (rows.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Cliente</th><th>Contato</th><th>Etiquetas</th><th>Pedidos</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>${rows.map(c=>`<tr data-cli="${c.id}">
+        <td><div class="row"><span class="avatar">${initials(c.nome)}</span>
+          <div class="stack"><span class="strong">${esc(c.nome)}</span><span class="tiny">desde ${dfmt(c.criadoEm)}</span></div></div></td>
+        <td class="tiny">${esc(c.telefone||'—')}<br>${esc(c.email||'—')}</td>
+        <td>${(c.tags||[]).length?(c.tags||[]).map(t=>`<span class="chip" style="height:22px;font-size:11px">${esc(t)}</span>`).join(' '):'<span class="tiny">—</span>'}</td>
+        <td class="num">${pedidosDe(c)}</td>
+        <td style="text-align:right" class="strong num">${BRL(totalDe(c))}</td></tr>`).join('')}</tbody></table></div>`
+    : vazio('search','Nenhum cliente encontrado','Tente outro termo de busca.'));
+};
+BIND.clientes = ()=>{
+  $$('[data-novo]').forEach(b=>b.onclick=()=>formCliente());
+  $$('[data-cli]').forEach(b=>b.onclick=()=>formCliente(b.dataset.cli));
+  const s = $('#c-busca');
+  if(s){ let t; s.oninput = ()=>{ clearTimeout(t); t=setTimeout(()=>{ cBusca=s.value; openPage('clientes'); },320); }; }
+};
+async function formCliente(id){
+  const rows = await api.list('customers');
+  const c = id ? rows.find(r=>r.id===id) : {nome:'',email:'',telefone:'',tags:[],obs:''};
+  const orders = id ? (await api.list('orders')).filter(o=>o.clienteId===id) : [];
+  const m = modal({ title: id?esc(c.nome):'Novo cliente', sub: id?`Cliente desde ${dtfmt(c.criadoEm)}`:'Nome é o único campo obrigatório.',
+    body:`
+      <label class="field"><span>Nome *</span><input class="input" id="c-nome" value="${esc(c.nome)}"></label>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <label class="field"><span>Telefone</span><input class="input" id="c-tel" value="${esc(c.telefone)}" placeholder="+55 00 00000-0000"></label>
+        <label class="field"><span>E-mail</span><input class="input" id="c-mail" type="email" value="${esc(c.email)}"></label>
+      </div>
+      <label class="field"><span>Etiquetas — separadas por vírgula</span><input class="input" id="c-tags" value="${esc((c.tags||[]).join(', '))}"></label>
+      <label class="field"><span>Observações internas</span><textarea class="textarea" id="c-obs">${esc(c.obs||'')}</textarea></label>
+      ${id?`<div class="sep"></div><span class="tiny strong">Histórico de pedidos</span>
+        <div style="margin-top:8px">${orders.length?orders.map(o=>`
+          <div class="between" style="padding:9px 0;border-bottom:1px solid var(--line)">
+            <div class="stack"><span style="font-size:13.5px">${esc(o.numero)}</span><span class="tiny">${dtfmt(o.criadoEm)} · ${o.status}</span></div>
+            <span class="strong num">${BRL(o.total)}</span></div>`).join('')
+          :'<p class="tiny">Nenhum pedido registrado para este cliente.</p>'}</div>`:''}`,
+    foot:`${id?'<button class="btn btn-danger" id="c-del">Excluir</button>':''}
+          <button class="btn btn-ghost" data-close>Cancelar</button>
+          <button class="btn btn-primary" id="c-save">${id?'Salvar':'Cadastrar'}</button>`});
+  bindCommon(m);
+  if(id) $('#c-del').onclick = async ()=>{
+    if(await confirmar({title:'Excluir cliente?', texto:`${c.nome} sai da lista. Os pedidos existentes continuam registrados.`, cta:'Excluir'})){
+      await api.remove('customers', id); closeModal(); openPage('clientes'); toast('Cliente excluído.','warn');
+    }
+  };
+  $('#c-save').onclick = e => withLoading(e.currentTarget, async ()=>{
+    clearErrs();
+    const nome = $('#c-nome').value.trim();
+    if(!nome) return fieldErr('c-nome','Informe o nome do cliente.');
+    const data = { nome, telefone:$('#c-tel').value.trim(), email:$('#c-mail').value.trim(),
+      tags:$('#c-tags').value.split(',').map(s=>s.trim()).filter(Boolean), obs:$('#c-obs').value.trim() };
+    id ? await api.update('customers', id, data) : await api.create('customers', data);
+    closeModal(); openPage('clientes'); toast(id?'Cliente atualizado.':'Cliente cadastrado.');
+  });
+}
+
+/* ================================================================
+   PEDIDOS — valores sempre calculados a partir dos itens
+   ================================================================ */
+const STATUS_LIST = ['Rascunho','Aguardando pagamento','Pago','Concluído','Cancelado'];
+let oFilter = 'Todos';
+PAGE.pedidos = async () => {
+  const all = await api.list('orders');
+  const rows = oFilter==='Todos' ? all : all.filter(o=>o.status===oFilter);
+  const h = phead('Pedidos','Cada pedido guarda cliente, itens, valores calculados, origem e responsável.',
+    `<button class="btn btn-primary" data-novo>${ic('plus',16,2.2)} Novo pedido</button>`);
+  if(!all.length) return h + vazio('cart','Nenhum pedido ainda',
+    'Crie um pedido manualmente ou deixe que ele nasça da conversa quando o WhatsApp estiver conectado.',
+    `<button class="btn btn-primary" data-novo>Criar pedido</button>`);
+  return h + `<div class="tabs">${['Todos',...STATUS_LIST].map(s=>`<button class="tab" aria-selected="${s===oFilter}" data-of="${s}">${s} (${
+      s==='Todos'?all.length:all.filter(o=>o.status===s).length})</button>`).join('')}</div>`
+    + (rows.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Pedido</th><th>Cliente</th><th>Origem</th><th>Responsável</th><th>Status</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>${rows.map(o=>`<tr data-ped="${o.id}">
+        <td><div class="stack"><span class="strong">${esc(o.numero)}</span><span class="tiny">${dtfmt(o.criadoEm)}</span></div></td>
+        <td><div class="row"><span class="avatar" style="width:28px;height:28px;font-size:11px">${initials(o.clienteNome)}</span>${esc(o.clienteNome)}</div></td>
+        <td><span class="chip ${o.origem==='IA'?'brand':''}">${esc(o.origem)}</span></td>
+        <td class="tiny">${esc(o.responsavel||'—')}</td>
+        <td><span class="chip ${statusKind(o.status)}"><span class="dot"></span>${o.status}</span></td>
+        <td style="text-align:right" class="strong num">${BRL(o.total)}</td></tr>`).join('')}</tbody></table></div>`
+    : vazio('cart','Nenhum pedido com este status','Troque o filtro acima.'));
+};
+BIND.pedidos = ()=>{
+  $$('[data-of]').forEach(b=>b.onclick=()=>{ oFilter=b.dataset.of; openPage('pedidos'); });
+  $$('[data-novo]').forEach(b=>b.onclick=()=>formPedido());
+  $$('[data-ped]').forEach(b=>b.onclick=()=>formPedido(b.dataset.ped));
+};
+
+async function formPedido(id){
+  const [orders, produtos, clientes, team] = await Promise.all([
+    api.list('orders'), api.list('products'), api.list('customers'), api.list('team')]);
+  if(!produtos.filter(p=>p.ativo).length && !id){
+    return modal({title:'Cadastre um produto primeiro',
+      sub:'Um pedido precisa de itens para calcular valores.',
+      body:'<p class="tiny">Assim que existir pelo menos um produto ativo no catálogo, o pedido pode ser criado.</p>',
+      foot:`<button class="btn btn-ghost" data-close>Fechar</button>
+            <button class="btn btn-primary" id="ir-prod">Ir para Produtos</button>`}),
+      $('#ir-prod').onclick = ()=>{ closeModal(); openPage('produtos'); };
+  }
+  const o = id ? orders.find(r=>r.id===id) : { numero:'', clienteId:'', clienteNome:'', itens:[],
+    desconto:0, status:'Rascunho', origem:'Manual', responsavel:S.user.nome, obs:'' };
+  let itens = o.itens.map(i=>({...i}));
+
+  const linhaItem = (i,idx) => `<div class="between" style="padding:9px 0;border-bottom:1px solid var(--line)">
+      <div class="stack" style="flex:1"><span style="font-size:13.5px">${esc(i.nome)}</span>
+        <span class="tiny">${i.qtd} × ${BRL(i.preco)}</span></div>
+      <span class="row"><span class="strong num">${BRL(i.qtd*i.preco)}</span>
+      <button class="btn btn-sm btn-quiet" data-rm="${idx}" aria-label="Remover">✕</button></span></div>`;
+
+  const m = modal({ title: id?`Pedido ${o.numero}`:'Novo pedido',
+    sub: id?`Criado em ${dtfmt(o.criadoEm)} · origem ${o.origem}`:'Os totais são calculados automaticamente.',
+    body:`
+      <label class="field"><span>Cliente *</span>
+        <select class="select" id="o-cli">
+          <option value="">Selecione ou cadastre abaixo</option>
+          ${clientes.map(c=>`<option value="${c.id}" ${c.id===o.clienteId?'selected':''}>${esc(c.nome)}</option>`).join('')}
+        </select></label>
+      <label class="field"><span>Ou informe um cliente novo</span>
+        <input class="input" id="o-novo-cli" placeholder="Nome do cliente" value="${id&&!o.clienteId?esc(o.clienteNome):''}"></label>
+      <div class="sep"></div>
+      <span class="tiny strong">Itens</span>
+      <div id="o-itens" style="margin:8px 0">${itens.length?itens.map(linhaItem).join(''):'<p class="tiny">Nenhum item adicionado.</p>'}</div>
+      <div class="row wrap" style="gap:8px;margin-bottom:6px">
+        <select class="select" id="o-prod" style="flex:1;min-width:150px">
+          ${produtos.filter(p=>p.ativo).map(p=>`<option value="${p.id}">${esc(p.nome)} — ${BRL(p.promo||p.preco)}</option>`).join('')}
+        </select>
+        <input class="input" id="o-qtd" type="number" min="1" value="1" style="width:78px">
+        <button class="btn btn-quiet" id="o-add">Adicionar</button>
+      </div>
+      <div class="sep"></div>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <label class="field"><span>Desconto</span><input class="input" id="o-desc" inputmode="decimal" value="${o.desconto?String(o.desconto).replace('.',','):''}"></label>
+        <label class="field"><span>Status</span><select class="select" id="o-status">
+          ${STATUS_LIST.map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select></label>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <label class="field"><span>Origem</span><select class="select" id="o-origem">
+          ${['Manual','WhatsApp','IA','Indicação','Outro'].map(s=>`<option ${s===o.origem?'selected':''}>${s}</option>`).join('')}</select></label>
+        <label class="field"><span>Responsável</span><select class="select" id="o-resp">
+          ${team.map(t=>`<option ${t.nome===o.responsavel?'selected':''}>${esc(t.nome)}</option>`).join('')}</select></label>
+      </div>
+      <label class="field"><span>Observações</span><textarea class="textarea" id="o-obs">${esc(o.obs||'')}</textarea></label>
+      <div class="card pad" style="box-shadow:none;background:var(--card-2)">
+        <div class="between tiny"><span>Subtotal</span><span class="num" id="o-sub">${BRL(0)}</span></div>
+        <div class="between tiny" style="margin-top:5px"><span>Desconto</span><span class="num" id="o-dsc">${BRL(0)}</span></div>
+        <div class="sep" style="margin:11px 0"></div>
+        <div class="between"><span class="strong">Total</span><span class="strong num" style="font-size:19px" id="o-tot">${BRL(0)}</span></div>
+      </div>`,
+    foot:`${id?'<button class="btn btn-danger" id="o-del">Excluir</button>':''}
+          <button class="btn btn-ghost" data-close>Cancelar</button>
+          <button class="btn btn-primary" id="o-save">${id?'Salvar pedido':'Criar pedido'}</button>`});
+  bindCommon(m);
+
+  const calc = () => {
+    const sub = itens.reduce((s,i)=>s+i.qtd*i.preco,0);
+    const d = Math.min(parseMoney($('#o-desc').value), sub);
+    $('#o-sub').textContent = BRL(sub);
+    $('#o-dsc').textContent = '− '+BRL(d);
+    $('#o-tot').textContent = BRL(sub-d);
+    return { sub, d, total: sub-d };
+  };
+  const redraw = () => {
+    $('#o-itens').innerHTML = itens.length ? itens.map(linhaItem).join('') : '<p class="tiny">Nenhum item adicionado.</p>';
+    $$('#o-itens [data-rm]').forEach(b=>b.onclick=()=>{ itens.splice(+b.dataset.rm,1); redraw(); });
+    stagger($('#o-itens').children, .03);
+    calc();
+  };
+  redraw();
+  $('#o-desc').oninput = calc;
+  $('#o-add').onclick = ()=>{
+    const p = produtos.find(x=>x.id===$('#o-prod').value);
+    const qtd = Math.max(1, parseInt($('#o-qtd').value)||1);
+    if(!p) return;
+    if(p.estoque!==null && p.estoque < qtd) toast(`Estoque de ${p.nome}: ${p.estoque}. O pedido será criado mesmo assim.`,'warn');
+    const ex = itens.find(i=>i.produtoId===p.id);
+    ex ? ex.qtd += qtd : itens.push({produtoId:p.id, nome:p.nome, preco:p.promo||p.preco, qtd});
+    redraw();
+  };
+  if(id) $('#o-del').onclick = async ()=>{
+    if(await confirmar({title:'Excluir pedido?', texto:`${o.numero} será removido do histórico e dos relatórios.`, cta:'Excluir'})){
+      await api.remove('orders', id); closeModal(); openPage('pedidos'); toast('Pedido excluído.','warn');
+    }
+  };
+  $('#o-save').onclick = e => withLoading(e.currentTarget, async ()=>{
+    clearErrs();
+    if(!itens.length) return toast('Adicione pelo menos um item ao pedido.','err');
+    let clienteId = $('#o-cli').value, clienteNome = '';
+    const novoNome = $('#o-novo-cli').value.trim();
+    if(!clienteId && novoNome){
+      const c = await api.create('customers', {nome:novoNome, telefone:'', email:'', tags:['pedido'], obs:''});
+      clienteId = c.id; clienteNome = c.nome;
+    } else if(clienteId){
+      clienteNome = clientes.find(c=>c.id===clienteId)?.nome || '';
+    } else {
+      return fieldErr('o-novo-cli','Escolha um cliente ou informe um nome.');
+    }
+    const {d, total} = calc();
+    const status = $('#o-status').value;
+    const data = { clienteId, clienteNome, itens, desconto:d, total, status,
+      origem:$('#o-origem').value, responsavel:$('#o-resp').value, obs:$('#o-obs').value.trim() };
+    if(id) await api.update('orders', id, data);
+    else {
+      const n = (await api.list('orders')).length + 1;
+      await api.create('orders', { numero:'#'+String(1000+n), ...data });
+    }
+    /* baixa de estoque quando o pedido é pago */
+    if(status==='Pago' || status==='Concluído'){
+      const prods = await api.list('products');
+      let mudou = false;
+      itens.forEach(i=>{ const p = prods.find(x=>x.id===i.produtoId);
+        if(p && p.estoque!==null && !o.baixado){ p.estoque = Math.max(0, p.estoque - i.qtd); mudou = true; } });
+      if(mudou){ await api.save('products', prods); if(id) await api.update('orders', id, {baixado:true}); }
+    }
+    closeModal(); openPage('pedidos'); toast(id?'Pedido atualizado.':'Pedido criado.');
+  });
+}
+
+/* ================================================================
+   EQUIPE
+   ================================================================ */
+const PAPEIS = ['Proprietário','Administrador','Gerente','Vendedor'];
+const PERM = {
+  'Proprietário':'Acesso total, inclusive assinatura e exclusão da empresa.',
+  'Administrador':'Tudo, menos assinatura e exclusão da empresa.',
+  'Gerente':'Pedidos, clientes, produtos, relatórios e equipe. Sem configurações de conta.',
+  'Vendedor':'Só as conversas e pedidos atribuídos a ele.'
+};
+PAGE.equipe = async () => {
+  const team = await api.list('team');
+  return phead('Equipe','Quem tem acesso ao painel e o que cada pessoa pode fazer.',
+    `<button class="btn btn-primary" data-novo>${ic('plus',16,2.2)} Convidar pessoa</button>`)
+    + `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(268px,1fr))">
+      ${team.map(t=>`<div class="card pad">
+        <div class="row"><span class="avatar" style="width:42px;height:42px">${initials(t.nome)}</span>
+          <div class="stack" style="min-width:0"><span class="strong">${esc(t.nome)}</span><span class="tiny">${esc(t.email||'sem e-mail')}</span></div></div>
+        <div class="sep"></div>
+        <span class="chip ${t.papel==='Proprietário'?'brand':''}">${t.papel}</span>
+        <p class="tiny" style="margin-top:10px;min-height:34px">${PERM[t.papel]}</p>
+        <div class="between" style="margin-top:8px">
+          <span class="chip ${t.ativo?'ok':'warn'}"><span class="dot"></span>${t.ativo?'Ativo':'Convite pendente'}</span>
+          ${t.papel!=='Proprietário'?`<button class="btn btn-sm btn-quiet" data-team="${t.id}">Editar</button>`:''}
+        </div></div>`).join('')}</div>`;
+};
+BIND.equipe = ()=>{
+  $$('[data-novo]').forEach(b=>b.onclick=()=>formTime());
+  $$('[data-team]').forEach(b=>b.onclick=()=>formTime(b.dataset.team));
+};
+async function formTime(id){
+  const team = await api.list('team');
+  const t = id ? team.find(x=>x.id===id) : {nome:'',email:'',papel:'Vendedor',ativo:false};
+  const m = modal({title: id?'Editar acesso':'Convidar pessoa',
+    sub: id?'':'A pessoa recebe um convite e define a própria senha ao aceitar.',
+    body:`<label class="field"><span>Nome *</span><input class="input" id="t-nome" value="${esc(t.nome)}"></label>
+      <label class="field"><span>E-mail *</span><input class="input" id="t-mail" type="email" value="${esc(t.email)}"></label>
+      <label class="field"><span>Papel</span><select class="select" id="t-papel">
+        ${PAPEIS.filter(p=>p!=='Proprietário').map(p=>`<option ${p===t.papel?'selected':''}>${p}</option>`).join('')}</select>
+        <span class="hint" id="t-hint">${PERM[t.papel]}</span></label>`,
+    foot:`${id?'<button class="btn btn-danger" id="t-del">Remover</button>':''}
+          <button class="btn btn-ghost" data-close>Cancelar</button>
+          <button class="btn btn-primary" id="t-save">${id?'Salvar':'Enviar convite'}</button>`});
+  $('#t-papel').onchange = e => $('#t-hint').textContent = PERM[e.target.value];
+  if(id) $('#t-del').onclick = async ()=>{
+    if(await confirmar({title:'Remover acesso?', texto:`${t.nome} perde o acesso ao painel imediatamente.`, cta:'Remover'})){
+      await api.remove('team', id); closeModal(); openPage('equipe'); toast('Acesso removido.','warn');
+    }
+  };
+  $('#t-save').onclick = e => withLoading(e.currentTarget, async ()=>{
+    clearErrs();
+    const nome=$('#t-nome').value.trim(), mail=$('#t-mail').value.trim();
+    if(!nome) return fieldErr('t-nome','Informe o nome.');
+    if(!validEmail(mail)) return fieldErr('t-mail','Informe um e-mail válido.');
+    const data = {nome, email:mail, papel:$('#t-papel').value};
+    id ? await api.update('team', id, data) : await api.create('team', {...data, ativo:false, convidadoEm:new Date().toISOString()});
+    closeModal(); openPage('equipe');
+    toast(id?'Acesso atualizado.':'Convite registrado. O envio por e-mail depende do serviço de e-mail configurado.','ok');
+  });
+}
+
+/* ================================================================
+   IA
+   ================================================================ */
+PAGE.ia = async () => {
+  const cfg = await api.getCfg('ai', {});
+  const prods = await api.list('products');
+  const ativos = prods.filter(p=>p.ativo);
+  return phead('Inteligência artificial','A IA responde a partir do que está cadastrado. Ela não inventa preço, prazo nem estoque.',
+    `<span class="chip ${cfg.ativa?'ok':''}"><span class="dot"></span>${cfg.ativa?'Ativa':'Desativada'}</span>`)
+    + `<div class="grid" style="grid-template-columns:1fr;gap:16px">
+      <div class="card pad-lg">
+        <div class="between" style="margin-bottom:16px">
+          <div class="stack"><span class="strong">Atendimento automático</span>
+            <span class="tiny">Só entra em operação com um canal conectado.</span></div>
+          <button class="switch" aria-checked="${!!cfg.ativa}" id="ia-on" data-switch></button></div>
+        <label class="field"><span>Como a IA se apresenta</span><input class="input" id="ia-nome" value="${esc(cfg.nome||'')}" placeholder="Ex.: Assistente da ${esc(S.company.nome)}"></label>
+        <label class="field"><span>Tom de voz</span><select class="select" id="ia-tom">
+          ${['Próximo e objetivo','Formal','Informal e descontraído'].map(t=>`<option ${t===cfg.tom?'selected':''}>${t}</option>`).join('')}</select></label>
+        <label class="field"><span>Mensagem de abertura</span><textarea class="textarea" id="ia-ab">${esc(cfg.abertura||'')}</textarea></label>
+        <label class="field"><span>Regras — o que ela nunca pode fazer</span><textarea class="textarea" id="ia-rg">${esc(cfg.regras||'')}</textarea></label>
+        <label class="field"><span>Quando transferir para uma pessoa</span><textarea class="textarea" id="ia-tr">${esc(cfg.transferir||'')}</textarea></label>
+        <label class="field"><span>Horário de atendimento</span><select class="select" id="ia-hr">
+          ${['24h','Comercial (9h–18h)','Personalizado'].map(t=>`<option ${t===cfg.horario?'selected':''}>${t}</option>`).join('')}</select></label>
+        <button class="btn btn-primary" id="ia-save" data-loading="Salvando">Salvar configuração</button>
+      </div>
+      <div class="card pad-lg">
+        <span class="strong">Base de conhecimento</span>
+        <p class="tiny" style="margin:6px 0 14px">A IA lê estes dados direto do sistema. Não existe base paralela.</p>
+        ${[['Produtos ativos', ativos.length, 'produtos', ativos.length?'':'Cadastre produtos para a IA ter o que responder.'],
+           ['Preços e estoque', ativos.length, 'produtos', ''],
+           ['Regras escritas', cfg.regras?1:0, 'configuracoes', cfg.regras?'':'Escreva as regras acima.'],
+           ['Dados da empresa', S.company.telefone?1:0, 'configuracoes', S.company.telefone?'':'Complete os dados em Configurações.']]
+          .map(([l,n,dest,aviso])=>`<div class="between" style="padding:11px 0;border-bottom:1px solid var(--line)">
+            <div class="stack"><span style="font-size:13.5px">${l}</span>${aviso?`<span class="tiny" style="color:var(--warn)">${aviso}</span>`:''}</div>
+            <span class="chip ${n?'ok':'warn'}">${n?'pronto':'pendente'}</span></div>`).join('')}
+        <div class="sep"></div>
+        <span class="strong" style="font-size:14px">Testar resposta</span>
+        <p class="tiny" style="margin:5px 0 12px">A prévia usa apenas os produtos cadastrados. Sem produtos, ela não responde preço.</p>
+        <div class="row" style="gap:8px"><input class="input" id="ia-q" placeholder="Ex.: qual o preço do ${esc(ativos[0]?.nome || 'seu produto')}?">
+        <button class="btn btn-quiet" id="ia-test">Testar</button></div>
+        <div id="ia-out" style="margin-top:12px"></div>
+      </div></div>`;
+};
+BIND.ia = ()=>{
+  $('#ia-save').onclick = e => withLoading(e.currentTarget, async ()=>{
+    await api.setCfg('ai', { nome:$('#ia-nome').value.trim(), tom:$('#ia-tom').value,
+      abertura:$('#ia-ab').value.trim(), regras:$('#ia-rg').value.trim(),
+      transferir:$('#ia-tr').value.trim(), horario:$('#ia-hr').value,
+      ativa: $('#ia-on').getAttribute('aria-checked')==='true' });
+    toast('Configuração da IA salva.');
+  });
+  $('#ia-test').onclick = async ()=>{
+    const q = $('#ia-q').value.trim(); if(!q) return;
+    const out = $('#ia-out');
+    out.innerHTML = `<div class="card pad" style="box-shadow:none;background:var(--card-2)"><span class="tiny">consultando o catálogo…</span></div>`;
+    const prods = (await api.list('products')).filter(p=>p.ativo);
+    const achado = prods.find(p=>q.toLowerCase().includes(p.nome.toLowerCase().split(' ')[0]));
+    setTimeout(()=>{
+      const txt = achado
+        ? `${achado.nome} está ${BRL(achado.promo||achado.preco)}${achado.estoque===null?'' : achado.estoque>0?`, com ${achado.estoque} em estoque`:', mas sem estoque no momento'}.`
+        : 'Não encontrei essa informação no catálogo cadastrado. Vou transferir para uma pessoa da equipe.';
+      out.innerHTML = `<div class="card pad" style="box-shadow:none;background:var(--card-2)">
+        <p style="font-size:13.5px">${esc(txt)}</p>
+        <p class="tiny" style="margin-top:8px">${achado?'Resposta montada a partir do produto cadastrado.':'Sem dado correspondente — por isso a transferência.'}</p></div>`;
+      enter(out.firstElementChild);
+    }, 420);
+  };
+};
+
+/* ================================================================
+   WHATSAPP — estado real de integração, nunca fingido
+   ================================================================ */
+PAGE.whatsapp = async () => {
+  const int = await api.getCfg('integrations', {});
+  const wa = int.whatsapp || {status:'desconectado'};
+  const conv = await api.list('conversations');
+  const h = phead('WhatsApp','O canal onde a IA atende e a equipe assume.',
+    `<span class="chip ${wa.status==='conectado'?'ok':'warn'}"><span class="dot"></span>${
+      wa.status==='conectado'?'Conectado':'Não conectado'}</span>`);
+  if(wa.status !== 'conectado'){
+    return h + `<div class="card pad-lg" style="margin-bottom:16px">
+        <span class="chip warn">Integração pendente</span>
+        <h3 style="font-size:18px;font-weight:600;margin:12px 0 8px;letter-spacing:-.02em">Nenhum número conectado</h3>
+        <p class="muted" style="font-size:14px;max-width:60ch">O Astro não simula uma conexão. Para receber e enviar mensagens é preciso configurar um provedor de API do WhatsApp com as credenciais abaixo. Enquanto isso, o painel continua funcionando: você cria pedidos, clientes e produtos normalmente.</p>
+        <div class="sep"></div>
+        <label class="field"><span>Provedor</span><select class="select" id="wa-prov">
+          <option>WhatsApp Cloud API (Meta)</option><option>Provedor terceirizado</option></select></label>
+        <label class="field"><span>Número de telefone</span><input class="input" id="wa-tel" placeholder="+55 00 00000-0000" value="${esc(wa.telefone||'')}"></label>
+        <label class="field"><span>Phone number ID</span><input class="input" id="wa-pid" value="${esc(wa.phoneId||'')}"></label>
+        <label class="field"><span>Token de acesso</span><input class="input" id="wa-tok" type="password" placeholder="nunca é exibido depois de salvo"></label>
+        <label class="field"><span>URL do webhook de recebimento</span>
+          <input class="input" value="https://seu-backend/api/whatsapp/webhook/${esc(S.company.id)}" readonly>
+          <span class="hint">Endereço que o provedor chama quando chega mensagem. Depende de um backend publicado.</span></label>
+        <button class="btn btn-primary" id="wa-save" data-loading="Verificando">Salvar e testar conexão</button>
+      </div>
+      ${vazio('chat','Sem conversas','As conversas aparecem aqui assim que o número estiver conectado e o primeiro cliente escrever.')}`;
+  }
+  return h + (conv.length ? '' : vazio('chat','Número conectado, aguardando mensagens',
+    'Assim que um cliente escrever, a conversa aparece aqui com o histórico e o cliente identificado.'));
+};
+BIND.whatsapp = ()=>{
+  const b = $('#wa-save'); if(!b) return;
+  b.onclick = e => withLoading(e.currentTarget, async ()=>{
+    clearErrs();
+    const tel=$('#wa-tel').value.trim(), pid=$('#wa-pid').value.trim(), tok=$('#wa-tok').value.trim();
+    if(!tel) return fieldErr('wa-tel','Informe o número.');
+    if(!pid) return fieldErr('wa-pid','Informe o phone number ID.');
+    if(!tok) return fieldErr('wa-tok','Informe o token de acesso.');
+    const int = await api.getCfg('integrations', {});
+    await api.setCfg('integrations', {...int, whatsapp:{ status:'aguardando', provedor:$('#wa-prov').value,
+      telefone:tel, phoneId:pid, tokenSalvo:true, salvoEm:new Date().toISOString() }});
+    toast('Credenciais salvas. A conexão só é confirmada quando o backend responder ao webhook.','warn');
+    openPage('whatsapp');
+  });
+};
+
+/* ================================================================
+   AUTOMAÇÕES
+   ================================================================ */
+const GATILHOS = ['Novo pedido criado','Pedido pago','Pedido cancelado','Cliente novo cadastrado','Estoque abaixo do mínimo','Cliente sem resposta'];
+const ACOES = ['Notificar um responsável','Marcar o cliente com uma etiqueta','Registrar aviso no painel','Enviar mensagem no WhatsApp'];
+PAGE.automacoes = async () => {
+  const rows = await api.list('automations');
+  const h = phead('Automações','Gatilho, condição e ação. As regras rodam sobre os seus dados.',
+    `<button class="btn btn-primary" data-novo>${ic('plus',16,2.2)} Criar automação</button>`);
+  if(!rows.length) return h + vazio('bolt','Nenhuma automação criada',
+    'Comece por uma regra simples: pedido acima de um valor notifica o gerente.',
+    `<button class="btn btn-primary" data-novo>Criar automação</button>`);
+  return h + `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(316px,1fr))">
+    ${rows.map(a=>`<div class="card pad">
+      <div class="between" style="margin-bottom:12px"><span class="strong">${esc(a.nome)}</span>
+        <button class="switch" aria-checked="${a.ativa}" data-switch data-auto="${a.id}"></button></div>
+      <div style="border-left:3px solid var(--info);background:var(--card-2);border-radius:10px;padding:11px 13px">
+        <div class="tiny strong">Quando</div><div style="font-size:13.5px">${esc(a.gatilho)}</div></div>
+      ${a.condicao?`<div style="width:1px;height:14px;background:var(--line-2);margin-left:18px"></div>
+      <div style="border-left:3px solid var(--warn);background:var(--card-2);border-radius:10px;padding:11px 13px">
+        <div class="tiny strong">E se</div><div style="font-size:13.5px">${esc(a.condicao)}</div></div>`:''}
+      <div style="width:1px;height:14px;background:var(--line-2);margin-left:18px"></div>
+      <div style="border-left:3px solid var(--accent);background:var(--card-2);border-radius:10px;padding:11px 13px">
+        <div class="tiny strong">Então</div><div style="font-size:13.5px">${esc(a.acao)}</div></div>
+      <div class="between" style="margin-top:13px"><span class="tiny">${a.disparos||0} disparo(s)</span>
+        <button class="btn btn-sm btn-quiet" data-edit="${a.id}">Editar</button></div>
+    </div>`).join('')}</div>`;
+};
+BIND.automacoes = ()=>{
+  $$('[data-novo]').forEach(b=>b.onclick=()=>formAuto());
+  $$('[data-edit]').forEach(b=>b.onclick=()=>formAuto(b.dataset.edit));
+  $$('[data-auto]').forEach(s=>s.addEventListener('toggled', async ev=>{
+    await api.update('automations', s.dataset.auto, {ativa:ev.detail});
+    toast(ev.detail?'Automação ativada.':'Automação pausada.', ev.detail?'ok':'warn');
+  }));
+};
+async function formAuto(id){
+  const rows = await api.list('automations');
+  const a = id ? rows.find(r=>r.id===id) : {nome:'',gatilho:GATILHOS[0],condicao:'',acao:ACOES[0],ativa:true};
+  modal({title: id?'Editar automação':'Criar automação', sub:'Escolha o gatilho, a condição opcional e a ação.',
+    body:`<label class="field"><span>Nome *</span><input class="input" id="a-nome" value="${esc(a.nome)}" placeholder="Ex.: Avisar gerente em pedido grande"></label>
+      <label class="field"><span>Quando</span><select class="select" id="a-g">${GATILHOS.map(g=>`<option ${g===a.gatilho?'selected':''}>${g}</option>`).join('')}</select></label>
+      <label class="field"><span>E se (opcional)</span><input class="input" id="a-c" value="${esc(a.condicao)}" placeholder="Ex.: o total for acima de R$ 1.000"></label>
+      <label class="field"><span>Então</span><select class="select" id="a-a">${ACOES.map(x=>`<option ${x===a.acao?'selected':''}>${x}</option>`).join('')}</select></label>`,
+    foot:`${id?'<button class="btn btn-danger" id="a-del">Excluir</button>':''}
+          <button class="btn btn-ghost" data-close>Cancelar</button>
+          <button class="btn btn-primary" id="a-save">${id?'Salvar':'Criar'}</button>`});
+  if(id) $('#a-del').onclick = async ()=>{
+    if(await confirmar({title:'Excluir automação?', texto:`“${a.nome}” deixa de rodar.`, cta:'Excluir'})){
+      await api.remove('automations', id); closeModal(); openPage('automacoes'); toast('Automação excluída.','warn'); }
+  };
+  $('#a-save').onclick = e => withLoading(e.currentTarget, async ()=>{
+    clearErrs();
+    const nome = $('#a-nome').value.trim();
+    if(!nome) return fieldErr('a-nome','Dê um nome à automação.');
+    const data = {nome, gatilho:$('#a-g').value, condicao:$('#a-c').value.trim(), acao:$('#a-a').value};
+    id ? await api.update('automations', id, data) : await api.create('automations', {...data, ativa:true, disparos:0});
+    closeModal(); openPage('automacoes'); toast(id?'Automação atualizada.':'Automação criada.');
+  });
+}
+
+/* ================================================================
+   RELATÓRIOS
+   ================================================================ */
+let rPeriodo = 30;
+PAGE.relatorios = async () => {
+  const m = await api.metrics(rPeriodo);
+  const orders = await api.list('orders');
+  const h = phead('Relatórios','Tudo calculado sobre os pedidos registrados no período.',
+    `<select class="select" id="r-per" style="width:auto">
+      ${[[7,'Últimos 7 dias'],[30,'Últimos 30 dias'],[90,'Últimos 90 dias'],[365,'Últimos 12 meses']]
+        .map(([v,l])=>`<option value="${v}" ${v===rPeriodo?'selected':''}>${l}</option>`).join('')}</select>`);
+  if(!orders.length) return h + vazio('chart','Sem dados para relatar',
+    'Os relatórios usam pedidos reais. Crie o primeiro pedido para começar a medir.',
+    `<button class="btn btn-primary" data-page="pedidos">Ir para Pedidos</button>`);
+  const porResp = {}, porOrigem = {};
+  orders.filter(o=>o.status==='Pago'||o.status==='Concluído').forEach(o=>{
+    porResp[o.responsavel||'—'] = (porResp[o.responsavel||'—']||0)+o.total;
+    porOrigem[o.origem] = (porOrigem[o.origem]||0)+o.total;
+  });
+  const barra = (obj, cor) => {
+    const ent = Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+    if(!ent.length) return '<p class="tiny">Nenhum pedido pago no período.</p>';
+    const mx = ent[0][1];
+    return ent.map(([n,v])=>`<div style="margin-bottom:12px">
+      <div class="between tiny" style="margin-bottom:5px"><span style="color:var(--ink)">${esc(n)}</span><span class="num">${BRL(v)}</span></div>
+      <div style="height:6px;background:var(--card-2);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${(v/mx)*100}%;background:${cor};border-radius:4px"></div></div></div>`).join('');
+  };
+  return h + `<div class="kpis" style="margin-bottom:16px">
+      ${[['Faturamento',BRL(m.faturamento)],['Pedidos',NUM(m.pedidos)],['Ticket médio',BRL(m.ticket)],['Conversão',m.conversao.toFixed(0)+'%']]
+        .map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v" style="font-size:22px">${v}</div></div>`).join('')}</div>
+    <div class="grid" style="grid-template-columns:1fr;gap:16px">
+      <div class="card pad-lg"><div class="strong" style="margin-bottom:14px">Produtos mais vendidos</div>
+        ${m.topProdutos.length?m.topProdutos.map(([n,q])=>{const mx=m.topProdutos[0][1];
+          return `<div style="margin-bottom:12px"><div class="between tiny" style="margin-bottom:5px">
+            <span style="color:var(--ink)">${esc(n)}</span><span class="num">${q} un.</span></div>
+            <div style="height:6px;background:var(--card-2);border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:${(q/mx)*100}%;background:var(--brand);border-radius:4px"></div></div></div>`;
+        }).join(''):'<p class="tiny">Nenhum produto vendido no período.</p>'}</div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(276px,1fr));gap:16px">
+        <div class="card pad-lg"><div class="strong" style="margin-bottom:14px">Por responsável</div>${barra(porResp,'var(--accent)')}</div>
+        <div class="card pad-lg"><div class="strong" style="margin-bottom:14px">Por origem</div>${barra(porOrigem,'var(--info)')}</div>
+      </div>
+      <div class="card pad-lg"><div class="strong" style="margin-bottom:12px">Resumo de clientes</div>
+        ${[['Clientes cadastrados',NUM(m.clientes)],['Produtos ativos',NUM(m.produtos)],
+           ['Pedidos cancelados',NUM(m.cancelados)],['Pedidos pagos',NUM(m.pagos)]]
+          .map(([l,v])=>`<div class="between" style="padding:9px 0;border-bottom:1px solid var(--line)">
+            <span style="font-size:13.5px">${l}</span><span class="strong num">${v}</span></div>`).join('')}</div>
+    </div>`;
+};
+BIND.relatorios = ()=>{
+  const s = $('#r-per'); if(s) s.onchange = ()=>{ rPeriodo = +s.value; openPage('relatorios'); };
+};
+
+/* ================================================================
+   INTEGRAÇÕES
+   ================================================================ */
+PAGE.integracoes = async () => {
+  const int = await api.getCfg('integrations', {});
+  const itens = [
+    ['whatsapp','WhatsApp','Receber e enviar mensagens pela API oficial ou por um provedor.','whatsapp'],
+    ['pagamentos','Pagamentos','Gerar cobrança de Pix, cartão e boleto e confirmar o pagamento.',null],
+    ['webhook','Webhooks','Enviar eventos de pedido para o seu sistema.',null]
+  ];
+  return phead('Integrações','Nenhuma integração aparece conectada sem credenciais reais configuradas.','')
+    + `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(286px,1fr))">
+      ${itens.map(([k,n,d,dest])=>{
+        const st = (int[k]||{}).status || 'desconectado';
+        const kind = st==='conectado'?'ok':st==='aguardando'?'warn':'';
+        const label = st==='conectado'?'Conectado':st==='aguardando'?'Credenciais salvas, conexão não confirmada':'Não conectado';
+        return `<div class="card pad">
+          <div class="row" style="align-items:flex-start"><span class="thumb">${ic('plug',19)}</span>
+            <div class="stack" style="flex:1"><span class="strong" style="font-size:14.5px">${n}</span><span class="tiny">${d}</span></div></div>
+          <div class="between" style="margin-top:16px">
+            <span class="chip ${kind}"><span class="dot"></span>${label}</span>
+            <button class="btn btn-sm ${st==='desconectado'?'btn-primary':'btn-quiet'}" ${dest?`data-page="${dest}"`:`data-int="${k}"`}>${st==='desconectado'?'Configurar':'Ver'}</button></div>
+        </div>`;}).join('')}
+    </div>
+    <div class="card pad-lg" style="margin-top:16px">
+      <span class="strong">API do Astro</span>
+      <p class="tiny" style="margin:6px 0 14px">A chave é gerada pelo backend quando ele estiver publicado. Nada é exibido antes disso.</p>
+      <div class="between" style="padding:10px 0;border-top:1px solid var(--line)">
+        <span style="font-size:13.5px">Chave de acesso</span><span class="chip warn">não gerada</span></div>
+      <div class="between" style="padding:10px 0;border-top:1px solid var(--line)">
+        <span style="font-size:13.5px">Identificador da empresa</span><span class="tiny num">${esc(S.company.id)}</span></div>
+    </div>`;
+};
+BIND.integracoes = ()=>{
+  $$('[data-int]').forEach(b=>b.onclick=()=>modal({title:'Configuração pendente',
+    sub:'Esta integração precisa de um backend publicado para funcionar.',
+    body:`<p class="tiny">O Astro guarda as credenciais e mostra o estado real da conexão. Enquanto o serviço externo não confirmar, o estado permanece como não conectado — nada aqui finge estar funcionando.</p>`,
+    foot:'<button class="btn btn-primary" data-close>Entendi</button>'}));
+};
+
+/* ================================================================
+   CONFIGURAÇÕES
+   ================================================================ */
+let cfgTab = 'Empresa';
+PAGE.configuracoes = async () => {
+  const abas = ['Empresa','Perfil','Notificações','Segurança','Assinatura','Dados'];
+  let body = '';
+  if(cfgTab==='Empresa') body = `<div class="card pad-lg">
+    <label class="field"><span>Nome da empresa</span><input class="input" id="s-nome" value="${esc(S.company.nome)}"></label>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <label class="field"><span>CNPJ ou CPF</span><input class="input" id="s-doc" value="${esc(S.company.doc||'')}"></label>
+      <label class="field"><span>Telefone</span><input class="input" id="s-tel" value="${esc(S.company.telefone||'')}"></label></div>
+    <label class="field"><span>Endereço</span><input class="input" id="s-end" value="${esc(S.company.endereco||'')}"></label>
+    <button class="btn btn-primary" id="s-save" data-loading="Salvando">Salvar dados da empresa</button></div>`;
+  if(cfgTab==='Perfil') body = `<div class="card pad-lg">
+    <div class="row" style="margin-bottom:18px"><span class="avatar" style="width:54px;height:54px;font-size:17px">${initials(S.user.nome)}</span>
+      <div class="stack"><span class="strong">${esc(S.user.nome)}</span><span class="tiny">${esc(S.user.role)} em ${esc(S.company.nome)}</span></div></div>
+    <label class="field"><span>Nome</span><input class="input" id="u-nome" value="${esc(S.user.nome)}"></label>
+    <label class="field"><span>E-mail</span><input class="input" value="${esc(S.user.email)}" disabled>
+      <span class="hint">O e-mail é o identificador da conta e não pode ser alterado aqui.</span></label>
+    <label class="field"><span>Tema</span><select class="select" id="u-tema">
+      ${[['auto','Seguir o sistema'],['light','Claro'],['dark','Escuro']]
+        .map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></label>
+    <button class="btn btn-primary" id="u-save" data-loading="Salvando">Salvar perfil</button></div>`;
+  if(cfgTab==='Notificações'){
+    const n = await api.getCfg('notifications', []);
+    const prefs = Array.isArray(n) ? {} : n;
+    body = `<div class="card pad-lg">
+      ${[['pedido','Novo pedido criado'],['pago','Pedido pago'],['cancel','Pedido cancelado'],
+         ['estoque','Estoque baixo'],['ia','IA pediu ajuda humana'],['resumo','Resumo diário por e-mail']]
+        .map(([k,l])=>`<div class="between" style="padding:12px 0;border-bottom:1px solid var(--line)">
+          <span style="font-size:14px">${l}</span>
+          <button class="switch" aria-checked="${prefs[k]!==false}" data-switch data-pref="${k}"></button></div>`).join('')}
+      <p class="hint" style="margin-top:14px">O envio por e-mail depende de um serviço de e-mail configurado no backend.</p></div>`;
+  }
+  if(cfgTab==='Segurança') body = `<div class="card pad-lg">
+    <label class="field"><span>Senha atual</span><input class="input" id="sg-a" type="password"></label>
+    <label class="field"><span>Nova senha</span><input class="input" id="sg-b" type="password" placeholder="Mínimo 8 caracteres"></label>
+    <button class="btn btn-primary" id="sg-save" data-loading="Alterando">Alterar senha</button>
+    <div class="sep"></div>
+    <p class="tiny">Sessão aberta desde ${dtfmt(S.user.criadoEm)}. As senhas são guardadas como hash com salt, nunca em texto puro.</p>
+    <button class="btn btn-ghost" style="margin-top:14px" id="sg-out">Sair da conta</button></div>`;
+  if(cfgTab==='Assinatura') body = `<div class="card pad-lg">
+    <span class="chip brand">Plano em definição</span>
+    <p class="muted" style="font-size:14px;margin-top:12px;max-width:58ch">Os preços dos planos ainda não foram definidos. Enquanto isso, a conta opera sem limite de uso e sem cobrança.</p>
+    <div class="sep"></div>
+    ${[['Empresa',esc(S.company.nome)],['Criada em',dtfmt(S.company.criadoEm)],['Identificador',esc(S.company.id)]]
+      .map(([l,v])=>`<div class="between" style="padding:9px 0;border-bottom:1px solid var(--line)">
+        <span style="font-size:13.5px">${l}</span><span class="tiny">${v}</span></div>`).join('')}</div>`;
+  if(cfgTab==='Dados'){
+    const [p,c,o] = await Promise.all([api.list('products'),api.list('customers'),api.list('orders')]);
+    const audit = await kv.get(K.audit(S.user.companyId), []);
+    body = `<div class="card pad-lg">
+      <span class="strong">Modo de demonstração</span>
+      <p class="tiny" style="margin:6px 0 14px;max-width:58ch">Popula a conta com dados de exemplo, sempre marcados como demonstração. Serve para ver o painel cheio antes de cadastrar os seus dados.</p>
+      ${S.demo
+        ? `<button class="btn btn-danger" id="demo-off">Apagar dados de demonstração</button>`
+        : `<button class="btn btn-ghost" id="demo-on" ${(p.length||c.length||o.length)?'disabled':''}>Carregar dados de demonstração</button>
+           ${(p.length||c.length||o.length)?'<p class="hint">Disponível apenas em contas vazias, para não misturar com dados reais.</p>':''}`}
+      <div class="sep"></div>
+      <span class="strong">O que existe nesta empresa</span>
+      ${[['Produtos',p.length],['Clientes',c.length],['Pedidos',o.length]]
+        .map(([l,v])=>`<div class="between" style="padding:9px 0;border-bottom:1px solid var(--line)">
+          <span style="font-size:13.5px">${l}</span><span class="strong num">${v}</span></div>`).join('')}
+      <div class="sep"></div>
+      <span class="strong">Registro de auditoria</span>
+      <p class="tiny" style="margin:6px 0 10px">Últimas ações registradas nesta empresa.</p>
+      ${audit.length? audit.slice(0,12).map(a=>`<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
+          <span style="font-size:13px">${esc(a.acao)} — ${esc(a.alvo).slice(0,32)}</span>
+          <span class="tiny">${dtfmt(a.em)}</span></div>`).join('')
+        : '<p class="tiny">Nenhuma ação registrada ainda.</p>'}</div>`;
+  }
+  return phead('Configurações','Empresa, conta e dados.','')
+    + `<div class="tabs">${abas.map(a=>`<button class="tab" aria-selected="${a===cfgTab}" data-ct="${a}">${a}</button>`).join('')}</div>` + body;
+};
+BIND.configuracoes = ()=>{
+  $$('[data-ct]').forEach(b=>b.onclick=()=>{ cfgTab=b.dataset.ct; openPage('configuracoes'); });
+  const s = $('#s-save'); if(s) s.onclick = e => withLoading(e.currentTarget, async ()=>{
+    const n = $('#s-nome').value.trim();
+    if(!n) return fieldErr('s-nome','O nome da empresa é obrigatório.');
+    await api.company({nome:n, doc:$('#s-doc').value.trim(), telefone:$('#s-tel').value.trim(), endereco:$('#s-end').value.trim()});
+    toast('Dados da empresa salvos.'); renderApp();
+  });
+  const t = $('#u-tema');
+  if(t){ t.value = LS.get('astro-theme') || 'auto';
+    t.onchange = ()=>{ setTheme(t.value); toast('Tema atualizado.'); }; }
+  const u = $('#u-save'); if(u) u.onclick = e => withLoading(e.currentTarget, async ()=>{
+    const nome = $('#u-nome').value.trim();
+    if(nome.split(/\s+/).length<2) return fieldErr('u-nome','Escreva nome e sobrenome.');
+    const users = await kv.get(K.users, []);
+    const me = users.find(x=>x.id===S.user.id); me.nome = nome;
+    await kv.set(K.users, users); S.user.nome = nome;
+    toast('Perfil atualizado.'); renderApp();
+  });
+  const sg = $('#sg-save'); if(sg) sg.onclick = e => withLoading(e.currentTarget, async ()=>{
+    clearErrs();
+    const a=$('#sg-a').value, b=$('#sg-b').value;
+    if(await sha256(S.user.salt+a) !== S.user.hash) return fieldErr('sg-a','Senha atual incorreta.');
+    if(b.length<8) return fieldErr('sg-b','Use pelo menos 8 caracteres.');
+    await api.resetPassword(S.user.email, b);
+    await api.restore();
+    toast('Senha alterada.');
+  });
+  const out = $('#sg-out'); if(out) out.onclick = sair;
+  const don = $('#demo-on'); if(don) don.onclick = carregarDemo;
+  const dof2 = $('#demo-off'); if(dof2) dof2.onclick = limparDemo;
+  $$('[data-pref]').forEach(sw=>sw.addEventListener('toggled', async ev=>{
+    const cur = await api.getCfg('notifications', {});
+    const prefs = Array.isArray(cur) ? {} : cur;
+    prefs[sw.dataset.pref] = ev.detail;
+    await api.setCfg('notifications', prefs);
+  }));
+};
+
+/* ================================================================
+   DEMO — separado e identificado
+   ================================================================ */
+async function carregarDemo(){
+  const ok = await confirmar({title:'Carregar dados de demonstração?',
+    texto:'A conta será populada com produtos, clientes e pedidos de exemplo, identificados como demonstração. Você pode apagar tudo com um clique.',
+    cta:'Carregar demonstração', perigo:false});
+  if(!ok) return;
+  const prods = [
+    {nome:'Curso de Tráfego (DEMO)',preco:497,estoque:null,categoria:'Curso',descricao:'Produto de demonstração.'},
+    {nome:'Ebook de Copy (DEMO)',preco:47,estoque:null,categoria:'Ebook',descricao:'Produto de demonstração.'},
+    {nome:'Tênis Runner 42 (DEMO)',preco:389.9,estoque:12,categoria:'Físico',descricao:'Produto de demonstração.'}
+  ];
+  const criados = [];
+  for(const p of prods) criados.push(await api.create('products',
+    {...p, promo:0, sku:'', ean:'', variacoes:[], imagem:'', ativo:true, demo:true}));
+  const clis = ['Marina Alves (DEMO)','Diego Santana (DEMO)','Paula Tavares (DEMO)','Rodrigo Lemos (DEMO)'];
+  const cc = [];
+  for(const n of clis) cc.push(await api.create('customers', {nome:n, telefone:'', email:'', tags:['demo'], obs:'', demo:true}));
+  let n = 0;
+  for(let i=0;i<14;i++){
+    const cli = cc[i % cc.length], prod = criados[i % criados.length];
+    const qtd = 1 + (i % 3);
+    const total = qtd * prod.preco;
+    const rows = await api.list('orders');
+    rows.unshift({ id:uid('ord'), numero:'#'+String(1001+n++), clienteId:cli.id, clienteNome:cli.nome,
+      itens:[{produtoId:prod.id, nome:prod.nome, preco:prod.preco, qtd}], desconto:0, total,
+      status: i%5===0 ? 'Cancelado' : 'Pago', origem: i%2 ? 'IA' : 'Manual', responsavel:S.user.nome,
+      obs:'', demo:true, criadoEm:new Date(Date.now() - i*1.6*864e5).toISOString() });
+    await api.save('orders', rows);
+  }
+  await api.company({demo:true}); S.demo = true;
+  toast('Dados de demonstração carregados.');
+  renderApp();
+}
+async function limparDemo(){
+  const ok = await confirmar({title:'Apagar dados de demonstração?',
+    texto:'Todos os registros marcados como demonstração serão removidos. Dados que você cadastrou permanecem.', cta:'Apagar'});
+  if(!ok) return;
+  for(const res of ['products','customers','orders']){
+    const rows = await api.list(res);
+    await api.save(res, rows.filter(r=>!r.demo));
+  }
+  await api.company({demo:false}); S.demo = false;
+  toast('Dados de demonstração removidos.','warn');
+  renderApp();
+}
+
+/* ================================================================
+   PAINÉIS: notificações e perfil
+   ================================================================ */
+async function painelNotificacoes(){
+  const [orders, prods] = await Promise.all([api.list('orders'), api.list('products')]);
+  const avisos = [];
+  orders.filter(o=>o.status==='Aguardando pagamento').slice(0,4).forEach(o=>
+    avisos.push(['warn', `${o.numero} aguardando pagamento`, `${o.clienteNome} · ${BRL(o.total)}`, dtfmt(o.criadoEm)]));
+  prods.filter(p=>p.ativo && p.estoque!==null && p.estoque<5).forEach(p=>
+    avisos.push([p.estoque<=0?'err':'warn', `Estoque de ${p.nome}`, p.estoque<=0?'Sem estoque':`Restam ${p.estoque}`, 'agora']));
+  const cfg = await api.getCfg('ai', {});
+  if(!cfg.ativa) avisos.push(['info','IA desativada','Ative em IA para começar a atender automaticamente','—']);
+  const int = await api.getCfg('integrations', {});
+  if((int.whatsapp||{}).status!=='conectado') avisos.push(['info','WhatsApp não conectado','Configure a integração para receber mensagens','—']);
+  modal({title:'Avisos', sub: avisos.length?`${avisos.length} item(ns) que dependem de você`:'Nada pendente por aqui.',
+    body: avisos.length ? avisos.map(([k,t,d,q])=>`<div class="between" style="padding:12px 0;border-bottom:1px solid var(--line)">
+      <div class="row" style="align-items:flex-start"><span class="dot" style="margin-top:7px;color:var(--${k==='err'?'err':k==='warn'?'warn':'info'})"></span>
+      <div class="stack"><span class="strong" style="font-size:13.5px">${esc(t)}</span><span class="tiny">${esc(d)}</span></div></div>
+      <span class="tiny">${q}</span></div>`).join('')
+      : '<p class="tiny">Os avisos são gerados a partir dos seus pedidos, estoque e integrações.</p>'});
+}
+function painelPerfil(){
+  modal({title:S.user.nome, sub:`${S.user.email} · ${S.user.role} em ${S.company.nome}`,
+    body:`<div class="grid" style="gap:8px">
+      <button class="btn btn-ghost" style="justify-content:flex-start" data-jp2="configuracoes">Configurações</button>
+      <button class="btn btn-ghost" style="justify-content:flex-start" data-jp2="equipe">Equipe</button>
+      <button class="btn btn-ghost" style="justify-content:flex-start" data-theme>Alternar tema</button>
+      <button class="btn btn-danger" style="justify-content:flex-start" id="pf-out">Sair da conta</button></div>`});
+  $$('[data-jp2]').forEach(b=>b.onclick=()=>{ closeModal(); openPage(b.dataset.jp2); });
+  $('#pf-out').onclick = ()=>{ closeModal(); sair(); };
+}
+async function sair(){
+  await api.logout();
+  toast('Você saiu da conta.','warn');
+  go('landing');
+}
+
+/* ================================================================
+   TEMA
+   ================================================================ */
+const LS = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return LS._m?.[k] ?? null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){ (LS._m||(LS._m={}))[k]=v; } },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){ if(LS._m) delete LS._m[k]; } }
+};
+function setTheme(v){
+  if(v==='auto'){ LS.del('astro-theme');
+    document.documentElement.setAttribute('data-theme', matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); }
+  else { LS.set('astro-theme', v); document.documentElement.setAttribute('data-theme', v); }
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  setTheme(cur);
+}
+setTheme(LS.get('astro-theme') || 'auto');
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{
+  if(!LS.get('astro-theme')) setTheme('auto');
+});
+
+/* ================================================================
+   ROTEADOR
+   ================================================================ */
+const ROUTES = {
+  landing:  { render: viewLanding,   bind: bindLanding,   publica:true },
+  login:    { render: viewLogin,     bind: bindLogin,     publica:true },
+  register: { render: viewRegister,  bind: bindRegister,  publica:true },
+  forgot:   { render: viewForgot,    bind: bindForgot,    publica:true },
+  reset:    { render: viewReset,     bind: bindReset,     publica:true },
+  onboarding:{render: viewOnboarding,bind: bindOnboarding,publica:false},
+  dashboard:{ render: viewApp,       bind: bindApp,       publica:false }
+};
+function go(rota){
+  if(!ROUTES[rota]) rota = 'landing';
+  if(!ROUTES[rota].publica && !S.user){ rota = 'login'; toast('Faça login para continuar.','warn'); }
+  S.route = rota;
+  location.hash = '#/'+rota;
+  const root = $('#root');
+  root.innerHTML = ROUTES[rota].render();
+  scrollTo({top:0});
+  if(rota!=='landing') enter(root.firstElementChild, {d:M.dur.md});
+  ROUTES[rota].bind();
+  bindGlobal();
+}
+function renderApp(){ if(S.user) go('dashboard'); }
+function bindGlobal(){
+  $$('[data-nav]').forEach(b=>b.onclick=()=>go(b.dataset.nav));
+  $$('[data-theme]').forEach(b=>b.onclick=toggleTheme);
+  $$('[data-perfil]').forEach(b=>b.onclick=painelPerfil);
+  $$('[data-notif]').forEach(b=>b.onclick=painelNotificacoes);
+}
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+(async function boot(){
+  const root = $('#root');
+  root.innerHTML = `<div style="min-height:60dvh;display:grid;place-items:center">
+    <div class="logo" style="opacity:.4"><span class="logo-mark">A</span>Astro</div></div>`;
+  let logado = null;
+  try { logado = await api.restore(); } catch(e){}
+  const hash = (location.hash||'').replace('#/','');
+  if(logado){
+    if(!S.company.onboarded) return go('onboarding');
+    return go(ROUTES[hash] && !ROUTES[hash].publica ? hash : 'dashboard');
+  }
+  go(ROUTES[hash]?.publica ? hash : 'landing');
+})();
+addEventListener('hashchange', ()=>{
+  const r = (location.hash||'').replace('#/','');
+  if(r && r!==S.route && ROUTES[r]) go(r);
+});
+</script>
+</body>
+</html>
